@@ -1,0 +1,2 @@
+// NextAuth route handler
+export {};

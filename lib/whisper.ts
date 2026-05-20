@@ -1,0 +1,2 @@
+// Whisper API wrapper
+export {};

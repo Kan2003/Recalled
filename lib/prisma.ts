@@ -1,0 +1,2 @@
+// Prisma DB client
+export {};

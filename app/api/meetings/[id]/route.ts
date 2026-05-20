@@ -1,0 +1,2 @@
+// GET single meeting
+export {};
