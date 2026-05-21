@@ -5,7 +5,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-950">
       <div className="bg-gray-900 p-8 rounded-2xl shadow-xl text-center space-y-6 w-full max-w-sm">
-        <h1 className="text-2xl font-bold text-white">Welcome to Minutely</h1>
+        <h1 className="text-2xl font-bold text-white">Welcome to Recalled</h1>
         <p className="text-gray-400 text-sm">Sign in to manage your meeting intelligence</p>
 
         <form action={async () => {
