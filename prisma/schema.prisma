@@ -1,4 +1,8 @@
-// Prisma schema
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
 generator client {
   provider = "prisma-client"
   output   = "../lib/generated/prisma"
@@ -51,4 +55,33 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+
+model User {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  name      String?
+  meetings  Meeting[]
+}
+
+model Meeting {
+  id          String       @id @default(cuid())
+  title       String
+  transcript  String       @db.Text
+  summary     String?      @db.Text
+  createdAt   DateTime     @default(now())
+  userId      String
+  user        User         @relation(fields: [userId], references: [id])
+  actionItems ActionItem[]
+}
+
+model ActionItem {
+  id          String   @id @default(cuid())
+  task        String
+  owner       String?
+  dueDate     DateTime?
+  done        Boolean  @default(false)
+  meetingId   String
+  meeting     Meeting  @relation(fields: [meetingId], references: [id])
 }
