@@ -1,7 +1,9 @@
 // app/login/page.tsx
-import { signIn } from "@/lib/auth"
+import { auth, signIn } from "@/lib/auth"
+import { redirect } from "next/navigation"
 
-export default function LoginPage() {
+export default async function LoginPage() {
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-950">
       <div className="bg-gray-900 p-8 rounded-2xl shadow-xl text-center space-y-6 w-full max-w-sm">
