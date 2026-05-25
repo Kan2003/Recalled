@@ -10,8 +10,10 @@ import { MEETINGS } from "./data";
 import { Rail, type RailItem } from "./Rail";
 import { MeetingListPane } from "./MeetingListPane";
 import { MeetingDetailPane } from "./MeetingDetailPane";
+import { useSession } from "next-auth/react";
 
 export function DashboardShell() {
+  const session = useSession();
   const [selectedId, setSelectedId] = useState(MEETINGS[0].id);
   const [nav, setNav] = useState<RailItem>("home");
   const router = useRouter();
@@ -34,6 +36,7 @@ export function DashboardShell() {
         onNav={setNav}
         onCreate={() => router.push("/upload")}
         openActions={openActions}
+        session={session}
       />
       <MeetingListPane meetings={MEETINGS} selectedId={selectedId} onSelect={setSelectedId} />
       <MeetingDetailPane meeting={selected} />

@@ -8,6 +8,7 @@ import { tokens } from "../landing/tokens";
 import type { Meeting } from "./data";
 import { SpeakerStack } from "./SpeakerStack";
 import { SearchIcon } from "./Icons";
+import { useRouter } from "next/navigation";
 
 type FilterKey = "all" | "open" | "live";
 
@@ -58,8 +59,12 @@ function MeetingRow({
   selected?: boolean;
   onClick?: () => void;
 }) {
+  const router = useRouter();
   return (
     <button
+      onDoubleClick={() => {
+        router.push(`/dashboard/${m.id}`);
+      }}
       onClick={onClick}
       style={{
         display: "block",
@@ -251,7 +256,7 @@ export function MeetingListPane({
           </div>
         ) : (
           filtered.map((m) => (
-            <MeetingRow key={m.id} m={m} selected={m.id === selectedId} onClick={() => onSelect(m.id)} />
+            <MeetingRow key={m.id} m={m} selected={m.id === selectedId} onClick={() => onSelect(m.id)}  />
           ))
         )}
       </div>

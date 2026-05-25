@@ -10,6 +10,7 @@ import { ACTION_ITEMS, DECISIONS } from "./data";
 import { SpeakerStack } from "./SpeakerStack";
 import { AskAIPanel } from "./AskAIPanel";
 import { ExportIcon, ShareIcon, CheckIcon } from "./Icons";
+import { useRouter } from "next/navigation";
 
 function Card({
   eyebrow,
@@ -162,6 +163,7 @@ function ActionRow({ item, onToggle }: { item: ActionItem; onToggle: () => void 
 }
 
 export function MeetingDetailPane({ meeting }: { meeting: Meeting | undefined }) {
+  const router = useRouter();
   const [actions, setActions] = useState<ActionItem[]>(ACTION_ITEMS);
   const openCount = actions.filter((a) => !a.done).length;
 
@@ -421,6 +423,10 @@ export function MeetingDetailPane({ meeting }: { meeting: Meeting | undefined })
                 fontSize: 12.5,
                 fontWeight: 500,
                 cursor: "pointer",
+              }}
+
+              onClick={() => {
+                router.push(`/dashboard/${meeting.id}`);
               }}
             >
               Open transcript →

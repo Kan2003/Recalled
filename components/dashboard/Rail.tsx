@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 // components/dashboard/Rail.tsx
 // Narrow 62px icon nav strip. Pure client because of nav state + click handlers.
 
@@ -74,17 +75,29 @@ function RailIcon({
 
 export type RailItem = "home" | "search" | "actions" | "shared" | "archive" | "settings";
 
+interface Userdata {
+  id: string,
+  name: string,
+  email: string,
+  image: string,
+  createdAt: string,
+}
 export function Rail({
   active = "home",
   onNav,
   onCreate,
   openActions = 0,
+  session
 }: {
   active?: RailItem;
   onNav?: (item: RailItem) => void;
   onCreate?: () => void;
   openActions?: number;
+  session?: any;
 }) {
+
+  const userdata:Userdata = session?.data?.user;
+
   return (
     <aside
       style={{
@@ -162,9 +175,10 @@ export function Rail({
           color: tokens.bg,
           border: `1.5px solid ${tokens.borderStrong}`,
           cursor: "pointer",
+          overflow: "hidden",
         }}
       >
-        KS
+        <img src={userdata?.image} alt={userdata?.name} width={32} height={32}/>
       </div>
     </aside>
   );
