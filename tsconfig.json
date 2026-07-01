@@ -4,7 +4,6 @@
     "moduleResolution": "bundler",
     "strict": true,
     "esModuleInterop": true,
-    "ignoreDeprecations": "6.0",
     "target": "ES2017",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
