@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
+    "postinstall": "prisma generate",
     "start": "next start",
     "lint": "eslint"
   },
@@ -15,13 +16,15 @@
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "dotenv": "^17.4.2",
+    "groq-sdk": "^1.2.1",
     "locomotive-scroll": "^5.0.0-beta.21",
     "next": "16.2.6",
     "next-auth": "^5.0.0-beta.31",
     "openai": "^6.39.0",
     "pg": "^8.21.0",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "web-vitals": "^5.3.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
