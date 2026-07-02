@@ -3,9 +3,8 @@
 // components/meeting/DocPane.tsx
 // Center column — the meeting document itself.
 
-import { useState } from "react";
 import { tokens } from "../landing/tokens";
-import { MEETING, type MeetingAction, type TranscriptTurn } from "./data";
+import { type MeetingDetail, type MeetingAction, type TranscriptTurn } from "./data";
 
 // ── Primitives ────────────────────────────────────────────────────────────
 function Tag({ children }: { children: React.ReactNode }) {
@@ -62,6 +61,7 @@ function H2({
 }
 
 function Cite({ time, onJump }: { time: string; onJump?: (t: string) => void }) {
+  if (!time) return null;
   return (
     <button
       onClick={() => onJump?.(time)}
@@ -88,10 +88,11 @@ function Cite({ time, onJump }: { time: string; onJump?: (t: string) => void }) 
   );
 }
 
-function HeaderSpeakers() {
+function HeaderSpeakers({ speakers }: { speakers: MeetingDetail["speakers"] }) {
+  if (!speakers.length) return null;
   return (
     <div style={{ display: "flex", alignItems: "center" }}>
-      {MEETING.speakers.map((s, i) => (
+      {speakers.map((s, i) => (
         <div
           key={s.name}
           title={`${s.name} · ${s.role}`}
@@ -108,7 +109,7 @@ function HeaderSpeakers() {
             display: "grid",
             placeItems: "center",
             marginLeft: i === 0 ? 0 : -7,
-            zIndex: MEETING.speakers.length - i,
+            zIndex: speakers.length - i,
             position: "relative",
           }}
         >
@@ -188,7 +189,7 @@ function ActionRow({
           <span style={{ color: tokens.violet, fontWeight: 600 }}>{action.who.toUpperCase()}</span>
           <span>·</span>
           <span style={{ color: action.done ? tokens.textMute : tokens.text }}>{action.due.toUpperCase()}</span>
-          <span>·</span>
+          {action.cite && <span>·</span>}
           <Cite time={action.cite} onJump={onJump} />
         </div>
       </div>
@@ -237,14 +238,16 @@ function ActionRow({
 
 function TranscriptTurnRow({
   turn,
+  speakers,
   active,
   onJump,
 }: {
   turn: TranscriptTurn;
+  speakers: MeetingDetail["speakers"];
   active: boolean;
   onJump: (t: string) => void;
 }) {
-  const speakerColor = MEETING.speakers.find((s) => s.name === turn.who)?.color || tokens.violet;
+  const speakerColor = speakers.find((s) => s.name === turn.who)?.color || tokens.violet;
   return (
     <div
       id={`t-${turn.t}`}
@@ -279,18 +282,21 @@ function TranscriptTurnRow({
         </span>
       </button>
       <div>
-        <div
-          style={{
-            fontFamily: "var(--font-geist-mono)",
-            fontSize: 11,
-            color: speakerColor,
-            fontWeight: 700,
-            marginBottom: 4,
-            letterSpacing: "0.02em",
-          }}
-        >
-          {turn.who.toUpperCase()} <span style={{ color: tokens.textMute, fontWeight: 500 }}>· {turn.role}</span>
-        </div>
+        {turn.who && (
+          <div
+            style={{
+              fontFamily: "var(--font-geist-mono)",
+              fontSize: 11,
+              color: speakerColor,
+              fontWeight: 700,
+              marginBottom: 4,
+              letterSpacing: "0.02em",
+            }}
+          >
+            {turn.who.toUpperCase()}
+            {turn.role && <span style={{ color: tokens.textMute, fontWeight: 500 }}> · {turn.role}</span>}
+          </div>
+        )}
         <div
           style={{
             fontFamily: "var(--font-geist-sans)",
@@ -298,6 +304,7 @@ function TranscriptTurnRow({
             color: tokens.text,
             lineHeight: 1.6,
             letterSpacing: "-0.005em",
+            whiteSpace: "pre-wrap",
           }}
         >
           {turn.text}
@@ -309,18 +316,20 @@ function TranscriptTurnRow({
 
 // ── Main pane ─────────────────────────────────────────────────────────────
 export function DocPane({
+  meeting,
   actions,
   setActions,
   activeTranscriptTime,
   onTimeJump,
 }: {
+  meeting: MeetingDetail;
   actions: MeetingAction[];
   setActions: React.Dispatch<React.SetStateAction<MeetingAction[]>>;
   activeTranscriptTime: string | null;
   onTimeJump: (t: string) => void;
 }) {
   const openCount = actions.filter((a) => !a.done).length;
-  const [firstSentence, ...rest] = MEETING.tldr.split(".");
+  const [firstSentence, ...rest] = meeting.tldr.split(".");
 
   return (
     <main
@@ -434,13 +443,13 @@ export function DocPane({
             lineHeight: 1.05,
           }}
         >
-          {MEETING.title}
+          {meeting.title}
         </h1>
 
         <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 16, flexWrap: "wrap" }}>
-          <HeaderSpeakers />
+          <HeaderSpeakers speakers={meeting.speakers} />
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {MEETING.tags.map((t) => (
+            {meeting.tags.map((t) => (
               <Tag key={t}>#{t}</Tag>
             ))}
           </div>
@@ -488,8 +497,8 @@ export function DocPane({
 
         {/* ─ Key decisions ─ */}
         <section id="decisions" style={{ scrollMarginTop: 24 }}>
-          <H2 id="h-decisions" count={MEETING.decisions.length}>KEY DECISIONS</H2>
-          {MEETING.decisions.map((d, i) => (
+          <H2 id="h-decisions" count={meeting.decisions.length}>KEY DECISIONS</H2>
+          {meeting.decisions.map((d, i) => (
             <div
               key={d.id}
               style={{
@@ -497,7 +506,7 @@ export function DocPane({
                 alignItems: "baseline",
                 gap: 18,
                 padding: "12px 0",
-                borderBottom: i < MEETING.decisions.length - 1 ? `1px solid ${tokens.border}` : "none",
+                borderBottom: i < meeting.decisions.length - 1 ? `1px solid ${tokens.border}` : "none",
               }}
             >
               <span
@@ -570,9 +579,9 @@ export function DocPane({
 
         {/* ─ Unresolved ─ */}
         <section id="unresolved" style={{ scrollMarginTop: 24 }}>
-          <H2 id="h-unresolved" count={MEETING.unresolved.length}>UNRESOLVED</H2>
+          <H2 id="h-unresolved" count={meeting.unresolved.length}>UNRESOLVED</H2>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {MEETING.unresolved.map((u) => (
+            {meeting.unresolved.map((u) => (
               <div
                 key={u}
                 style={{
@@ -594,9 +603,9 @@ export function DocPane({
 
         {/* ─ Topics ─ */}
         <section id="topics" style={{ scrollMarginTop: 24 }}>
-          <H2 id="h-topics" count={MEETING.topics.length}>TOPICS</H2>
+          <H2 id="h-topics" count={meeting.topics.length}>TOPICS</H2>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {MEETING.topics.map((t) => (
+            {meeting.topics.map((t) => (
               <span
                 key={t}
                 style={{
@@ -619,7 +628,7 @@ export function DocPane({
 
         {/* ─ Transcript ─ */}
         <section id="transcript" style={{ scrollMarginTop: 24 }}>
-          <H2 id="h-transcript" count={`${MEETING.transcript.length} TURNS`}>TRANSCRIPT</H2>
+          <H2 id="h-transcript" count={`${meeting.transcript.length} TURNS`}>TRANSCRIPT</H2>
           <div
             style={{
               display: "flex",
@@ -641,10 +650,11 @@ export function DocPane({
               ↓ Download .txt
             </button>
           </div>
-          {MEETING.transcript.map((turn) => (
+          {meeting.transcript.map((turn) => (
             <TranscriptTurnRow
               key={turn.t}
               turn={turn}
+              speakers={meeting.speakers}
               active={activeTranscriptTime === turn.t}
               onJump={onTimeJump}
             />
@@ -666,8 +676,8 @@ export function DocPane({
             letterSpacing: "0.04em",
           }}
         >
-          <span>END · {MEETING.duration}</span>
-          <span>SHARED BY @KAN · ANALYZED MAR 14</span>
+          <span>END · {meeting.duration}</span>
+          <span>ANALYZED {meeting.date.toUpperCase()}</span>
         </div>
       </div>
     </main>

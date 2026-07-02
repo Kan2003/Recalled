@@ -6,11 +6,11 @@
 import { useState, useEffect, useRef } from "react";
 import { tokens } from "../landing/tokens";
 import {
-  MEETING,
   ASK_HISTORY_INITIAL,
   ASK_SUGGESTIONS,
   ASK_SAMPLE_ANSWERS,
   type AskMessage,
+  type MeetingDetail,
 } from "./data";
 
 // Typewriter — types out `text` while `run` is true.
@@ -433,7 +433,7 @@ function ShareStatus() {
   );
 }
 
-function RelatedMeetings() {
+function RelatedMeetings({ related }: { related: MeetingDetail["related"] }) {
   return (
     <div
       style={{
@@ -455,8 +455,13 @@ function RelatedMeetings() {
       >
         // RELATED MEETINGS
       </div>
+      {related.length === 0 ? (
+        <div style={{ fontFamily: "var(--font-geist-sans)", fontSize: 12, color: tokens.textDim, lineHeight: 1.45 }}>
+          No related meetings found yet.
+        </div>
+      ) : (
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        {MEETING.related.map((m) => (
+        {related.map((m) => (
           <a
             key={m.id}
             href={`/dashboard/${m.id}`}
@@ -513,11 +518,18 @@ function RelatedMeetings() {
           </a>
         ))}
       </div>
+      )}
     </div>
   );
 }
 
-export function RightRail({ onTimeJump }: { onTimeJump: (t: string) => void }) {
+export function RightRail({
+  meeting,
+  onTimeJump,
+}: {
+  meeting: MeetingDetail;
+  onTimeJump: (t: string) => void;
+}) {
   return (
     <aside
       style={{
@@ -537,7 +549,7 @@ export function RightRail({ onTimeJump }: { onTimeJump: (t: string) => void }) {
       <AskAI onTimeJump={onTimeJump} />
       <div style={{ overflow: "auto", display: "flex", flexDirection: "column", gap: 16, flexShrink: 0 }}>
         <ShareStatus />
-        <RelatedMeetings />
+        <RelatedMeetings related={meeting.related} />
       </div>
     </aside>
   );
