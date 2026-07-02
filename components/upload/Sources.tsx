@@ -9,7 +9,7 @@ import { tokens } from "../landing/tokens";
 
 // ── Types ────────────────────────────────────────────────────────────────
 export type SourceKind = "audio" | "paste" | "record" | "url";
-export type SelectedFile = { name: string; size: string; duration: string };
+export type SelectedFile = { name: string; size: string; duration: string; raw: File };
 
 // ── Icons (inline so no icon-library dep) ────────────────────────────────
 const MicIcon = (
@@ -120,6 +120,7 @@ export function AudioSource({
       name: f.name,
       size: (f.size / 1024 / 1024).toFixed(1) + " MB",
       duration: "—", // populated by server once probed
+      raw: f,
     });
   };
 
@@ -344,58 +345,6 @@ export function AudioSource({
         </div>
       )}
 
-      {/* Recent files */}
-      <div>
-        <div
-          style={{
-            fontFamily: "var(--font-geist-mono)",
-            fontSize: 10.5,
-            color: tokens.textMute,
-            letterSpacing: "0.08em",
-            marginBottom: 10,
-          }}
-        >
-          // RECENT FROM YOUR DEVICE
-        </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {[
-            { name: "standup_03.wav",  size: "12 MB", dur: "18:42" },
-            { name: "design_crit.m4a", size: "47 MB", dur: "52:04" },
-            { name: "1on1_dana.mp3",   size: "21 MB", dur: "28:15" },
-          ].map((f) => (
-            <button
-              key={f.name}
-              onClick={() => onFileChange({ name: f.name, size: f.size, duration: f.dur })}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "7px 11px",
-                borderRadius: 8,
-                background: "transparent",
-                border: `1px solid ${tokens.border}`,
-                color: tokens.textDim,
-                fontFamily: "var(--font-geist-mono)",
-                fontSize: 11.5,
-                cursor: "pointer",
-                transition: "all 0.15s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = tokens.cyan + "55";
-                e.currentTarget.style.color = tokens.text;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = tokens.border;
-                e.currentTarget.style.color = tokens.textDim;
-              }}
-            >
-              <span style={{ color: tokens.cyan }}>♪</span>
-              <span>{f.name}</span>
-              <span style={{ color: tokens.textMute, fontSize: 10 }}>· {f.dur}</span>
-            </button>
-          ))}
-        </div>
-      </div>
     </>
   );
 }

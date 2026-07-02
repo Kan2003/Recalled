@@ -3,21 +3,21 @@
 // single change (e.g. swapping accent hue) ripples through every component.
 
 export const tokens = {
-  bg: "#08070d",
-  surface: "#0e0d15",
-  surface2: "#15131f",
-  border: "rgba(255,255,255,0.08)",
-  borderStrong: "rgba(255,255,255,0.14)",
-  text: "#f4f3fb",
-  textDim: "#9a98a8",
-  textMute: "#5a5867",
-  // Iridescent accents
-  violet: "#a78bfa",
-  blue: "#60a5fa",
-  cyan: "#22d3ee",
-  pink: "#f0abfc",
+  bg: "#0b0a12",
+  surface: "#171522",
+  surface2: "#201d2e",
+  border: "rgba(255,255,255,0.14)",
+  borderStrong: "rgba(255,255,255,0.22)",
+  text: "#f8f7fc",
+  textDim: "#b3b1c2",
+  textMute: "#7a7889",
+  // Iridescent accents — brightened for contrast against the new surfaces
+  violet: "#c4b5fd",
+  blue: "#7dd3fc",
+  cyan: "#67e8f9",
+  pink: "#f5d0fe",
   // Default accent — swap per-theme
-  accent: "#22d3ee",
+  accent: "#67e8f9",
 } as const;
 
 export type Tokens = typeof tokens;
