@@ -322,15 +322,20 @@ export function MetadataForm({
   state,
   set,
   hasSource,
+  busy = false,
+  error = null,
   onCancel,
   onSubmit,
 }: {
   state: MetaState;
   set: (patch: Partial<MetaState>) => void;
   hasSource: boolean;
+  busy?: boolean;
+  error?: string | null;
   onCancel: () => void;
   onSubmit: () => void;
 }) {
+  const canSubmit = hasSource && !busy;
   return (
     <Card padding={26}>
       <Eyebrow>// MEETING DETAILS · OPTIONAL</Eyebrow>
@@ -463,29 +468,47 @@ export function MetadataForm({
 
         <button
           onClick={onSubmit}
-          disabled={!hasSource}
+          disabled={!canSubmit}
           style={{
             flex: 1,
-            background: hasSource ? tokens.text : tokens.surface2,
-            color: hasSource ? tokens.bg : tokens.textMute,
-            border: hasSource ? "none" : `1px solid ${tokens.border}`,
+            background: canSubmit ? tokens.text : tokens.surface2,
+            color: canSubmit ? tokens.bg : tokens.textMute,
+            border: canSubmit ? "none" : `1px solid ${tokens.border}`,
             padding: "11px 18px",
             borderRadius: 8,
             fontFamily: "var(--font-geist-sans)",
             fontSize: 14,
             fontWeight: 500,
-            cursor: hasSource ? "pointer" : "not-allowed",
+            cursor: canSubmit ? "pointer" : "not-allowed",
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
             gap: 8,
-            boxShadow: hasSource ? `0 8px 20px ${tokens.cyan}25` : "none",
+            boxShadow: canSubmit ? `0 8px 20px ${tokens.cyan}25` : "none",
           }}
         >
-          {hasSource ? "Analyze meeting" : "Add a source first"}
-          {hasSource && <span style={{ fontFamily: "var(--font-geist-mono)", fontSize: 12 }}>→</span>}
+          {busy ? "Analyzing…" : hasSource ? "Analyze meeting" : "Add a source first"}
+          {canSubmit && <span style={{ fontFamily: "var(--font-geist-mono)", fontSize: 12 }}>→</span>}
         </button>
       </div>
+
+      {error && (
+        <div
+          style={{
+            marginTop: 14,
+            padding: "10px 12px",
+            background: "#f8717115",
+            border: "1px solid #f8717144",
+            borderRadius: 8,
+            fontFamily: "var(--font-geist-mono)",
+            fontSize: 11.5,
+            color: "#fca5a5",
+            lineHeight: 1.45,
+          }}
+        >
+          {error}
+        </div>
+      )}
 
       <div
         style={{

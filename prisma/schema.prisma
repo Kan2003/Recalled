@@ -66,6 +66,8 @@ model Meeting {
   title       String
   transcript  String       @db.Text
   summary     String?      @db.Text
+  decisions   Json?        // string[] extracted by the analyzer
+  topics      Json?        // string[] extracted by the analyzer
   createdAt   DateTime     @default(now())
   userId      String
   user        User         @relation(fields: [userId], references: [id])

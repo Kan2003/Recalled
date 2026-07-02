@@ -33,6 +33,10 @@ export function UploadShell() {
   const [meta, setMeta] = useState<MetaState>(META_DEFAULTS);
   const setMetaPartial = (patch: Partial<MetaState>) => setMeta((m) => ({ ...m, ...patch }));
 
+  // Pipeline status
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   // Has the user supplied a valid source?
   const hasSource =
     (activeSource === "audio" && !!file) ||
@@ -40,13 +44,61 @@ export function UploadShell() {
     (activeSource === "url"   && /^https?:\/\//.test(url)) ||
     (activeSource === "record");
 
-  const handleSubmit = () => {
-    if (!hasSource) return;
-    // Real impl:
-    // 1. POST source → /api/transcribe (returns meetingId)
-    // 2. POST {meetingId, ...meta} → /api/analyze
-    // 3. router.push(`/upload/processing/${meetingId}`)  (or wherever your processing screen lives)
-    alert("Would POST to /api/transcribe → /api/analyze");
+  const handleSubmit = async () => {
+    if (!hasSource || busy) return;
+    setBusy(true);
+    setError(null);
+
+    try {
+      // 1. Get a transcript — from Whisper for audio/video, or straight from
+      //    pasted text. (record/url sources aren't wired up yet.)
+      let transcript: string;
+      if (activeSource === "audio" && file?.raw) {
+        const formData = new FormData();
+        formData.append("audio", file.raw);
+        const res = await fetch("/api/transcribe", { method: "POST", body: formData });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || "Transcription failed");
+        transcript = data.transcript;
+      } else if (activeSource === "paste") {
+        transcript = pasteText.trim();
+      } else {
+        throw new Error("This source isn't supported yet — use audio or pasted text.");
+      }
+
+      if (!transcript) throw new Error("No transcript to analyze.");
+
+      // 2. Analyze the transcript → { summary, decisions, actionItems, topics }
+      const analyzeRes = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transcript }),
+      });
+      const analysis = await analyzeRes.json();
+      if (!analyzeRes.ok) throw new Error(analysis?.error || "Analysis failed");
+
+      // 3. Persist the meeting + its action items
+      const saveRes = await fetch("/api/meetings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: meta.title,
+          transcript,
+          summary: meta.summarize ? analysis.summary : null,
+          decisions: meta.summarize ? analysis.decisions : [],
+          topics: meta.summarize ? analysis.topics : [],
+          actionItems: meta.actions ? analysis.actionItems : [],
+        }),
+      });
+      const meeting = await saveRes.json();
+      if (!saveRes.ok) throw new Error(meeting?.error || "Failed to save meeting");
+
+      // 4. Off to the meeting detail page
+      router.push(`/dashboard/${meeting.id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+      setBusy(false);
+    }
   };
 
   return (
@@ -137,6 +189,8 @@ export function UploadShell() {
               state={meta}
               set={setMetaPartial}
               hasSource={hasSource}
+              busy={busy}
+              error={error}
               onCancel={() => router.push("/dashboard")}
               onSubmit={handleSubmit}
             />
