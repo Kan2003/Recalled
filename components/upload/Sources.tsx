@@ -8,7 +8,7 @@ import { useRef, useState } from "react";
 import { tokens } from "../landing/tokens";
 
 // ── Types ────────────────────────────────────────────────────────────────
-export type SourceKind = "audio" | "paste" | "record" | "url";
+export type SourceKind = "audio" | "paste" | "url";
 export type SelectedFile = { name: string; size: string; duration: string; raw: File };
 
 // ── Icons (inline so no icon-library dep) ────────────────────────────────
@@ -22,12 +22,6 @@ const PasteIcon = (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="8" y="2" width="8" height="4" rx="1" />
     <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" />
-  </svg>
-);
-const RecordIcon = (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="9" />
-    <circle cx="12" cy="12" r="3.5" fill="currentColor" />
   </svg>
 );
 const LinkIcon = (
@@ -96,7 +90,6 @@ export function SourceTabs({ active, onChange }: { active: SourceKind; onChange:
     >
       <SourceTab icon={MicIcon}    label="Upload audio"     active={active === "audio"}   onClick={() => onChange("audio")} />
       <SourceTab icon={PasteIcon}  label="Paste transcript" active={active === "paste"}   onClick={() => onChange("paste")} />
-      <SourceTab icon={RecordIcon} label="Record now"       active={active === "record"}  onClick={() => onChange("record")} />
       <SourceTab icon={LinkIcon}   label="From URL"         active={active === "url"}     onClick={() => onChange("url")} />
     </div>
   );
@@ -390,98 +383,6 @@ export function PasteSource({ value, onChange }: { value: string; onChange: (v: 
         <span>
           {wordCount} WORDS · ~{Math.ceil(wordCount / 130)} MIN READ
         </span>
-      </div>
-    </div>
-  );
-}
-
-// ── RECORD SOURCE ────────────────────────────────────────────────────────
-// Placeholder for the in-browser recorder. Real impl: getUserMedia + MediaRecorder.
-export function RecordSource() {
-  return (
-    <div
-      style={{
-        border: `1px dashed ${tokens.borderStrong}`,
-        borderRadius: 14,
-        padding: "52px 24px",
-        textAlign: "center",
-        background: tokens.surface,
-      }}
-    >
-      <div
-        style={{
-          width: 84,
-          height: 84,
-          margin: "0 auto 20px",
-          borderRadius: 99,
-          background: `linear-gradient(135deg, #ef444422, ${tokens.violet}22)`,
-          border: "1.5px solid #ef444444",
-          display: "grid",
-          placeItems: "center",
-          color: "#ef4444",
-          boxShadow: "0 0 30px #ef444433",
-        }}
-      >
-        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 2a3 3 0 00-3 3v7a3 3 0 006 0V5a3 3 0 00-3-3z" />
-          <path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8" />
-        </svg>
-      </div>
-      <div
-        style={{
-          fontFamily: "var(--font-geist-sans)",
-          fontSize: 20,
-          fontWeight: 600,
-          color: tokens.text,
-          letterSpacing: "-0.02em",
-          marginBottom: 8,
-        }}
-      >
-        Record from your microphone
-      </div>
-      <div
-        style={{
-          fontFamily: "var(--font-geist-sans)",
-          fontSize: 13.5,
-          color: tokens.textDim,
-          marginBottom: 20,
-          maxWidth: 380,
-          marginLeft: "auto",
-          marginRight: "auto",
-        }}
-      >
-        We&apos;ll capture audio in your browser and stream it to Whisper as you record. Hit stop and we analyze.
-      </div>
-      <button
-        style={{
-          background: "#ef4444",
-          color: tokens.text,
-          border: "none",
-          padding: "11px 22px",
-          borderRadius: 99,
-          fontFamily: "var(--font-geist-sans)",
-          fontSize: 13.5,
-          fontWeight: 500,
-          cursor: "pointer",
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 8,
-          boxShadow: "0 8px 20px #ef444440",
-        }}
-      >
-        <span style={{ width: 8, height: 8, borderRadius: 99, background: tokens.text }} />
-        Start recording
-      </button>
-      <div
-        style={{
-          marginTop: 18,
-          fontFamily: "var(--font-geist-mono)",
-          fontSize: 10.5,
-          color: tokens.textMute,
-          letterSpacing: "0.04em",
-        }}
-      >
-        REQUIRES MICROPHONE PERMISSION
       </div>
     </div>
   );

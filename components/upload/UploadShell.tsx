@@ -13,7 +13,6 @@ import {
   SourceTabs,
   AudioSource,
   PasteSource,
-  RecordSource,
   URLSource,
   type SourceKind,
   type SelectedFile,
@@ -41,8 +40,7 @@ export function UploadShell() {
   const hasSource =
     (activeSource === "audio" && !!file) ||
     (activeSource === "paste" && pasteText.trim().length > 50) ||
-    (activeSource === "url"   && /^https?:\/\//.test(url)) ||
-    (activeSource === "record");
+    (activeSource === "url"   && /^https?:\/\//.test(url));
 
   const handleSubmit = async () => {
     if (!hasSource || busy) return;
@@ -51,7 +49,7 @@ export function UploadShell() {
 
     try {
       // 1. Get a transcript — from Whisper for audio/video, or straight from
-      //    pasted text. (record/url sources aren't wired up yet.)
+      //    pasted text. (url source isn't wired up yet.)
       let transcript: string;
       if (activeSource === "audio" && file?.raw) {
         const formData = new FormData();
@@ -144,7 +142,7 @@ export function UploadShell() {
                   lineHeight: 1.55,
                 }}
               >
-                Audio, text, live recording, or a URL — pick whichever you&apos;ve got. Recalled handles the rest.
+                Audio, text, or a URL — pick whichever you&apos;ve got. Recalled handles the rest.
               </p>
             </div>
 
@@ -152,7 +150,6 @@ export function UploadShell() {
               <SourceTabs active={activeSource} onChange={setActiveSource} />
               {activeSource === "audio"  && <AudioSource file={file} onFileChange={setFile} />}
               {activeSource === "paste"  && <PasteSource value={pasteText} onChange={setPaste} />}
-              {activeSource === "record" && <RecordSource />}
               {activeSource === "url"    && <URLSource value={url} onChange={setUrl} />}
             </Card>
 

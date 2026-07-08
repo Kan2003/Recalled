@@ -4,10 +4,12 @@ import Image from "next/image";
 // components/dashboard/Rail.tsx
 // Narrow 62px icon nav strip. Pure client because of nav state + click handlers.
 
+import { useEffect, useRef, useState } from "react";
 import { tokens } from "../landing/tokens";
 import {
   HomeIcon, SearchIcon, CheckBoxIcon, ShareIcon, ArchiveIcon, SettingsIcon, PlusIcon,
 } from "./Icons";
+import { signOut } from "next-auth/react";
 
 function RailIcon({
   children,
@@ -97,6 +99,19 @@ export function Rail({
 }) {
 
   const userdata:Userdata = session?.data?.user;
+  const [showAccountMenu, setShowAccountMenu] = useState(false);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showAccountMenu) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (accountMenuRef.current && !accountMenuRef.current.contains(e.target as Node)) {
+        setShowAccountMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showAccountMenu]);
 
   return (
     <aside
@@ -151,14 +166,68 @@ export function Rail({
       <div style={{ width: 22, height: 1, background: tokens.border, margin: "4px 0" }} />
 
       <RailIcon active={active === "home"}    onClick={() => onNav?.("home")}   title="Home"><HomeIcon /></RailIcon>
-      <RailIcon active={active === "search"}  onClick={() => onNav?.("search")} title="Search"><SearchIcon /></RailIcon>
       <RailIcon active={active === "actions"} badge={openActions > 0 ? String(openActions) : undefined} onClick={() => onNav?.("actions")} title="My actions"><CheckBoxIcon /></RailIcon>
       <RailIcon active={active === "shared"}  onClick={() => onNav?.("shared")} title="Shared"><ShareIcon /></RailIcon>
       <RailIcon active={active === "archive"} onClick={() => onNav?.("archive")}title="Archive"><ArchiveIcon /></RailIcon>
 
       <div style={{ flex: 1 }} />
 
-      <RailIcon active={active === "settings"} onClick={() => onNav?.("settings")} title="Settings"><SettingsIcon /></RailIcon>
+      <div ref={accountMenuRef} style={{ position: "relative" }}>
+        <RailIcon active={active === "settings" || showAccountMenu} onClick={() => setShowAccountMenu((v) => !v)} title="Settings"><SettingsIcon /></RailIcon>
+
+        {showAccountMenu && (
+          <div
+            style={{
+              position: "absolute",
+              left: "calc(100% + 10px)",
+              bottom: 0,
+              minWidth: 180,
+              background: tokens.bg,
+              border: `1px solid ${tokens.border}`,
+              borderRadius: 10,
+              boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
+              padding: 6,
+              zIndex: 50,
+            }}
+          >
+            <div
+              style={{
+                padding: "8px 10px",
+                fontSize: 12,
+                color: tokens.textDim,
+                borderBottom: `1px solid ${tokens.border}`,
+                marginBottom: 4,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {userdata?.name || userdata?.email}
+            </div>
+            <button
+              onClick={() => {
+                setShowAccountMenu(false);
+                signOut({ callbackUrl: "/login" });
+              }}
+              style={{
+                width: "100%",
+                textAlign: "left",
+                padding: "8px 10px",
+                borderRadius: 6,
+                background: "transparent",
+                border: "none",
+                color: tokens.text,
+                fontSize: 13,
+                cursor: "pointer",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+            >
+              Sign out
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Avatar */}
       <div
@@ -174,7 +243,6 @@ export function Rail({
           fontWeight: 700,
           color: tokens.bg,
           border: `1.5px solid ${tokens.borderStrong}`,
-          cursor: "pointer",
           overflow: "hidden",
         }}
       >

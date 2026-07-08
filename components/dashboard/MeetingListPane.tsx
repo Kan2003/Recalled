@@ -3,7 +3,7 @@
 // components/dashboard/MeetingListPane.tsx
 // Middle pane: search, filter chips, scrollable list of meeting rows.
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { tokens } from "../landing/tokens";
 import type { Meeting } from "./data";
 import { SpeakerStack } from "./SpeakerStack";
@@ -11,6 +11,14 @@ import { SearchIcon } from "./Icons";
 import { useRouter } from "next/navigation";
 
 type FilterKey = "all" | "open" | "live";
+
+// Drag-to-resize config for the pane. Dragging past COLLAPSE_THRESHOLD
+// snaps the pane into a slim collapsed rail instead of shrinking further.
+const DEFAULT_WIDTH = 360;
+const MIN_WIDTH = 280;
+const MAX_WIDTH = 560;
+const COLLAPSE_THRESHOLD = 200;
+const COLLAPSED_WIDTH = 56;
 
 function FilterChip({
   children,
@@ -164,6 +172,37 @@ export function MeetingListPane({
   const [filter, setFilter] = useState<FilterKey>("all");
   const [query, setQuery] = useState("");
 
+  const [width, setWidth] = useState(DEFAULT_WIDTH);
+  const [collapsed, setCollapsed] = useState(false);
+  const [resizing, setResizing] = useState(false);
+  const dragState = useRef<{ startX: number; startWidth: number } | null>(null);
+
+  const handlePointerMove = useCallback((e: PointerEvent) => {
+    if (!dragState.current) return;
+    const next = dragState.current.startWidth + (e.clientX - dragState.current.startX);
+    if (next < COLLAPSE_THRESHOLD) {
+      setCollapsed(true);
+    } else {
+      setCollapsed(false);
+      setWidth(Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, next)));
+    }
+  }, []);
+
+  const handlePointerUp = useCallback(() => {
+    dragState.current = null;
+    setResizing(false);
+    window.removeEventListener("pointermove", handlePointerMove);
+    window.removeEventListener("pointerup", handlePointerUp);
+  }, [handlePointerMove]);
+
+  const startResize = (e: React.PointerEvent) => {
+    e.preventDefault();
+    dragState.current = { startX: e.clientX, startWidth: collapsed ? MIN_WIDTH : width };
+    setResizing(true);
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+  };
+
   const filtered = useMemo(
     () =>
       meetings.filter((m) => {
@@ -177,10 +216,88 @@ export function MeetingListPane({
 
   const openCount = meetings.filter((m) => m.actions.open > 0).length;
 
+  const resizeHandle = (
+    <div
+      onPointerDown={startResize}
+      onDoubleClick={() => { setCollapsed(false); setWidth(DEFAULT_WIDTH); }}
+      title="Drag to resize · double-click to reset"
+      style={{
+        position: "absolute",
+        top: 0,
+        right: -3,
+        width: 6,
+        height: "100%",
+        cursor: "col-resize",
+        zIndex: 5,
+      }}
+    >
+      <div
+        style={{
+          width: 2,
+          height: "100%",
+          margin: "0 auto",
+          background: resizing ? tokens.cyan : "transparent",
+          transition: resizing ? "none" : "background 0.15s",
+        }}
+      />
+    </div>
+  );
+
+  if (collapsed) {
+    return (
+      <section
+        style={{
+          position: "relative",
+          width: COLLAPSED_WIDTH,
+          borderRight: `1px solid ${tokens.border}`,
+          background: tokens.surface,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          paddingTop: 18,
+          flexShrink: 0,
+        }}
+      >
+        <button
+          onClick={() => setCollapsed(false)}
+          title="Expand meetings list"
+          style={{
+            width: 30,
+            height: 30,
+            borderRadius: 8,
+            background: "transparent",
+            border: `1px solid ${tokens.border}`,
+            color: tokens.textDim,
+            cursor: "pointer",
+            display: "grid",
+            placeItems: "center",
+          }}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 18l6-6-6-6" />
+          </svg>
+        </button>
+        <span
+          style={{
+            marginTop: 14,
+            fontFamily: "var(--font-geist-mono)",
+            fontSize: 10,
+            color: tokens.textMute,
+            letterSpacing: "0.04em",
+          }}
+        >
+          {meetings.length}
+        </span>
+        {resizeHandle}
+      </section>
+    );
+  }
+
   return (
     <section
       style={{
-        width: 360,
+        position: "relative",
+        width,
         borderRight: `1px solid ${tokens.border}`,
         background: tokens.surface,
         display: "flex",
@@ -188,6 +305,7 @@ export function MeetingListPane({
         flexShrink: 0,
       }}
     >
+      {resizeHandle}
       <div style={{ padding: "18px 18px 14px", borderBottom: `1px solid ${tokens.border}` }}>
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 14 }}>
           <h1 style={{ fontFamily: "var(--font-geist-sans)", fontSize: 18, fontWeight: 600, letterSpacing: "-0.02em", color: tokens.text, margin: 0 }}>
