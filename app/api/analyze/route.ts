@@ -1,10 +1,10 @@
 // app/api/analyze/route.ts
-import Anthropic from "@anthropic-ai/sdk"
-import { auth } from "@/lib/auth"
+import Groq from "groq-sdk";
+import { auth } from "@/lib/auth";
 
-const claude = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
-})
+const groq = new Groq({
+  apiKey: process.env.GROQ_ANALYZE_API_KEY!,
+});
 
 export async function POST(req: Request) {
   const session = await auth()
@@ -15,9 +15,9 @@ export async function POST(req: Request) {
 
   const { transcript } = await req.json()
 
-  const message = await claude.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 1000,
+  const completion = await groq.chat.completions.create({
+    model: "llama-3.3-70b-versatile",
+    max_tokens: 4000,
     messages: [
       {
         role: "user",
@@ -42,7 +42,7 @@ ${transcript}`,
     ],
   })
 
-  const raw = message.content[0].type === "text" ? message.content[0].text : ""
+  const raw = completion.choices[0]?.message?.content ?? "";
 
   try {
     const result = JSON.parse(raw.replace(/```json|```/g, "").trim())

@@ -3,9 +3,8 @@
 // components/meeting/DocPane.tsx
 // Center column — the meeting document itself.
 
-import { useState } from "react";
 import { tokens } from "../landing/tokens";
-import { MEETING, type MeetingAction, type TranscriptTurn } from "./data";
+import { type MeetingDetail, type MeetingAction, type TranscriptTurn } from "./data";
 
 // ── Primitives ────────────────────────────────────────────────────────────
 function Tag({ children }: { children: React.ReactNode }) {
@@ -62,6 +61,7 @@ function H2({
 }
 
 function Cite({ time, onJump }: { time: string; onJump?: (t: string) => void }) {
+  if (!time) return null;
   return (
     <button
       onClick={() => onJump?.(time)}
@@ -88,10 +88,11 @@ function Cite({ time, onJump }: { time: string; onJump?: (t: string) => void }) 
   );
 }
 
-function HeaderSpeakers() {
+function HeaderSpeakers({ speakers }: { speakers: MeetingDetail["speakers"] }) {
+  if (speakers.length === 0) return null;
   return (
     <div style={{ display: "flex", alignItems: "center" }}>
-      {MEETING.speakers.map((s, i) => (
+      {speakers.map((s, i) => (
         <div
           key={s.name}
           title={`${s.name} · ${s.role}`}
@@ -108,7 +109,7 @@ function HeaderSpeakers() {
             display: "grid",
             placeItems: "center",
             marginLeft: i === 0 ? 0 : -7,
-            zIndex: MEETING.speakers.length - i,
+            zIndex: speakers.length - i,
             position: "relative",
           }}
         >
@@ -188,8 +189,12 @@ function ActionRow({
           <span style={{ color: tokens.violet, fontWeight: 600 }}>{action.who.toUpperCase()}</span>
           <span>·</span>
           <span style={{ color: action.done ? tokens.textMute : tokens.text }}>{action.due.toUpperCase()}</span>
-          <span>·</span>
-          <Cite time={action.cite} onJump={onJump} />
+          {action.cite && (
+            <>
+              <span>·</span>
+              <Cite time={action.cite} onJump={onJump} />
+            </>
+          )}
         </div>
       </div>
       <div style={{ display: "flex", gap: 4 }}>
@@ -239,12 +244,13 @@ function TranscriptTurnRow({
   turn,
   active,
   onJump,
+  speakerColor,
 }: {
   turn: TranscriptTurn;
   active: boolean;
   onJump: (t: string) => void;
+  speakerColor: string;
 }) {
-  const speakerColor = MEETING.speakers.find((s) => s.name === turn.who)?.color || tokens.violet;
   return (
     <div
       id={`t-${turn.t}`}
@@ -279,18 +285,20 @@ function TranscriptTurnRow({
         </span>
       </button>
       <div>
-        <div
-          style={{
-            fontFamily: "var(--font-geist-mono)",
-            fontSize: 11,
-            color: speakerColor,
-            fontWeight: 700,
-            marginBottom: 4,
-            letterSpacing: "0.02em",
-          }}
-        >
-          {turn.who.toUpperCase()} <span style={{ color: tokens.textMute, fontWeight: 500 }}>· {turn.role}</span>
-        </div>
+        {turn.who && (
+          <div
+            style={{
+              fontFamily: "var(--font-geist-mono)",
+              fontSize: 11,
+              color: speakerColor,
+              fontWeight: 700,
+              marginBottom: 4,
+              letterSpacing: "0.02em",
+            }}
+          >
+            {turn.who.toUpperCase()} {turn.role && <span style={{ color: tokens.textMute, fontWeight: 500 }}>· {turn.role}</span>}
+          </div>
+        )}
         <div
           style={{
             fontFamily: "var(--font-geist-sans)",
@@ -298,6 +306,7 @@ function TranscriptTurnRow({
             color: tokens.text,
             lineHeight: 1.6,
             letterSpacing: "-0.005em",
+            whiteSpace: "pre-wrap",
           }}
         >
           {turn.text}
@@ -309,18 +318,20 @@ function TranscriptTurnRow({
 
 // ── Main pane ─────────────────────────────────────────────────────────────
 export function DocPane({
+  meeting,
   actions,
   setActions,
   activeTranscriptTime,
   onTimeJump,
 }: {
+  meeting: MeetingDetail;
   actions: MeetingAction[];
   setActions: React.Dispatch<React.SetStateAction<MeetingAction[]>>;
   activeTranscriptTime: string | null;
   onTimeJump: (t: string) => void;
 }) {
   const openCount = actions.filter((a) => !a.done).length;
-  const [firstSentence, ...rest] = MEETING.tldr.split(".");
+  const [firstSentence, ...rest] = meeting.tldr.split(".");
 
   return (
     <main
@@ -370,9 +381,6 @@ export function DocPane({
               }}
             />
             ANALYZED
-          </span>
-          <span style={{ fontFamily: "var(--font-geist-mono)", fontSize: 10.5, color: tokens.textMute, letterSpacing: "0.04em" }}>
-            CLAUDE · 92S · 14.3K TOKENS
           </span>
           <span style={{ flex: 1 }} />
           <button
@@ -434,13 +442,13 @@ export function DocPane({
             lineHeight: 1.05,
           }}
         >
-          {MEETING.title}
+          {meeting.title}
         </h1>
 
         <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 16, flexWrap: "wrap" }}>
-          <HeaderSpeakers />
+          <HeaderSpeakers speakers={meeting.speakers} />
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {MEETING.tags.map((t) => (
+            {meeting.tags.map((t) => (
               <Tag key={t}>#{t}</Tag>
             ))}
           </div>
@@ -472,54 +480,62 @@ export function DocPane({
               &ldquo;{firstSentence}.&rdquo;
             </em>
           </p>
-          <p
-            style={{
-              fontFamily: "var(--font-geist-sans)",
-              fontSize: 16,
-              color: tokens.textDim,
-              lineHeight: 1.6,
-              marginTop: 18,
-              maxWidth: 640,
-            }}
-          >
-            {rest.join(".").trim()}
-          </p>
+          {rest.join(".").trim() && (
+            <p
+              style={{
+                fontFamily: "var(--font-geist-sans)",
+                fontSize: 16,
+                color: tokens.textDim,
+                lineHeight: 1.6,
+                marginTop: 18,
+                maxWidth: 640,
+              }}
+            >
+              {rest.join(".").trim()}
+            </p>
+          )}
         </section>
 
         {/* ─ Key decisions ─ */}
         <section id="decisions" style={{ scrollMarginTop: 24 }}>
-          <H2 id="h-decisions" count={MEETING.decisions.length}>KEY DECISIONS</H2>
-          {MEETING.decisions.map((d, i) => (
-            <div
-              key={d.id}
-              style={{
-                display: "flex",
-                alignItems: "baseline",
-                gap: 18,
-                padding: "12px 0",
-                borderBottom: i < MEETING.decisions.length - 1 ? `1px solid ${tokens.border}` : "none",
-              }}
-            >
-              <span
+          <H2 id="h-decisions" count={meeting.decisions.length}>KEY DECISIONS</H2>
+          {meeting.decisions.length === 0 ? (
+            <div style={{ color: tokens.textMute, fontFamily: "var(--font-geist-mono)", fontSize: 12 }}>
+              No decisions extracted.
+            </div>
+          ) : (
+            meeting.decisions.map((d, i) => (
+              <div
+                key={d.id}
                 style={{
-                  fontFamily: "Instrument Serif, serif",
-                  fontStyle: "italic",
-                  fontSize: 24,
-                  color: tokens.violet,
-                  minWidth: 32,
-                  fontWeight: 400,
+                  display: "flex",
+                  alignItems: "baseline",
+                  gap: 18,
+                  padding: "12px 0",
+                  borderBottom: i < meeting.decisions.length - 1 ? `1px solid ${tokens.border}` : "none",
                 }}
               >
-                {String(i + 1).padStart(2, "0")}.
-              </span>
-              <div style={{ flex: 1, paddingTop: 2 }}>
-                <div style={{ fontFamily: "var(--font-geist-sans)", fontSize: 15.5, color: tokens.text, lineHeight: 1.5, marginBottom: 4 }}>
-                  {d.text}
+                <span
+                  style={{
+                    fontFamily: "Instrument Serif, serif",
+                    fontStyle: "italic",
+                    fontSize: 24,
+                    color: tokens.violet,
+                    minWidth: 32,
+                    fontWeight: 400,
+                  }}
+                >
+                  {String(i + 1).padStart(2, "0")}.
+                </span>
+                <div style={{ flex: 1, paddingTop: 2 }}>
+                  <div style={{ fontFamily: "var(--font-geist-sans)", fontSize: 15.5, color: tokens.text, lineHeight: 1.5, marginBottom: 4 }}>
+                    {d.text}
+                  </div>
+                  <Cite time={d.cite} onJump={onTimeJump} />
                 </div>
-                <Cite time={d.cite} onJump={onTimeJump} />
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </section>
 
         {/* ─ Action items ─ */}
@@ -527,99 +543,84 @@ export function DocPane({
           <H2 id="h-actions" count={`${openCount} OPEN · ${actions.length} TOTAL`} accent={tokens.cyan}>
             ACTION ITEMS
           </H2>
-          {actions.map((a) => (
-            <ActionRow
-              key={a.id}
-              action={a}
-              onToggle={() =>
-                setActions((arr) => arr.map((x) => (x.id === a.id ? { ...x, done: !x.done } : x)))
-              }
-              onJump={onTimeJump}
-            />
-          ))}
-          <div
-            style={{
-              marginTop: 12,
-              padding: "10px 14px",
-              background: tokens.surface2,
-              border: `1px dashed ${tokens.border}`,
-              borderRadius: 8,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <span style={{ fontFamily: "var(--font-geist-mono)", fontSize: 11, color: tokens.textDim, letterSpacing: "0.02em" }}>
-              Daily reminder emails are <span style={{ color: "#34d399", fontWeight: 600 }}>ON</span> for open actions
-            </span>
-            <button
-              style={{
-                background: "transparent",
-                color: tokens.cyan,
-                border: "none",
-                cursor: "pointer",
-                fontFamily: "var(--font-geist-mono)",
-                fontSize: 11,
-                fontWeight: 600,
-              }}
-            >
-              Configure →
-            </button>
-          </div>
+          {actions.length === 0 ? (
+            <div style={{ color: tokens.textMute, fontFamily: "var(--font-geist-mono)", fontSize: 12 }}>
+              No action items extracted.
+            </div>
+          ) : (
+            actions.map((a) => (
+              <ActionRow
+                key={a.id}
+                action={a}
+                onToggle={() =>
+                  setActions((arr) => arr.map((x) => (x.id === a.id ? { ...x, done: !x.done } : x)))
+                }
+                onJump={onTimeJump}
+              />
+            ))
+          )}
         </section>
 
         {/* ─ Unresolved ─ */}
-        <section id="unresolved" style={{ scrollMarginTop: 24 }}>
-          <H2 id="h-unresolved" count={MEETING.unresolved.length}>UNRESOLVED</H2>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {MEETING.unresolved.map((u) => (
-              <div
-                key={u}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  padding: "12px 14px",
-                  background: "#fbbf240a",
-                  border: "1px solid #fbbf2433",
-                  borderRadius: 8,
-                }}
-              >
-                <span style={{ color: "#fbbf24", fontFamily: "var(--font-geist-mono)", fontSize: 14, fontWeight: 700 }}>?</span>
-                <span style={{ fontFamily: "var(--font-geist-sans)", fontSize: 14, color: tokens.text }}>{u}</span>
-              </div>
-            ))}
-          </div>
-        </section>
+        {meeting.unresolved.length > 0 && (
+          <section id="unresolved" style={{ scrollMarginTop: 24 }}>
+            <H2 id="h-unresolved" count={meeting.unresolved.length}>UNRESOLVED</H2>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {meeting.unresolved.map((u) => (
+                <div
+                  key={u}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    padding: "12px 14px",
+                    background: "#fbbf240a",
+                    border: "1px solid #fbbf2433",
+                    borderRadius: 8,
+                  }}
+                >
+                  <span style={{ color: "#fbbf24", fontFamily: "var(--font-geist-mono)", fontSize: 14, fontWeight: 700 }}>?</span>
+                  <span style={{ fontFamily: "var(--font-geist-sans)", fontSize: 14, color: tokens.text }}>{u}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* ─ Topics ─ */}
         <section id="topics" style={{ scrollMarginTop: 24 }}>
-          <H2 id="h-topics" count={MEETING.topics.length}>TOPICS</H2>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {MEETING.topics.map((t) => (
-              <span
-                key={t}
-                style={{
-                  padding: "8px 14px",
-                  borderRadius: 99,
-                  background: tokens.surface,
-                  border: `1px solid ${tokens.border}`,
-                  fontFamily: "var(--font-geist-mono)",
-                  fontSize: 12,
-                  color: tokens.textDim,
-                  letterSpacing: "0.02em",
-                  cursor: "pointer",
-                }}
-              >
-                #{t}
-              </span>
-            ))}
-          </div>
+          <H2 id="h-topics" count={meeting.topics.length}>TOPICS</H2>
+          {meeting.topics.length === 0 ? (
+            <div style={{ color: tokens.textMute, fontFamily: "var(--font-geist-mono)", fontSize: 12 }}>
+              No topics extracted.
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {meeting.topics.map((t) => (
+                <span
+                  key={t}
+                  style={{
+                    padding: "8px 14px",
+                    borderRadius: 99,
+                    background: tokens.surface,
+                    border: `1px solid ${tokens.border}`,
+                    fontFamily: "var(--font-geist-mono)",
+                    fontSize: 12,
+                    color: tokens.textDim,
+                    letterSpacing: "0.02em",
+                    cursor: "pointer",
+                  }}
+                >
+                  #{t}
+                </span>
+              ))}
+            </div>
+          )}
         </section>
 
         {/* ─ Transcript ─ */}
         <section id="transcript" style={{ scrollMarginTop: 24 }}>
-          <H2 id="h-transcript" count={`${MEETING.transcript.length} TURNS`}>TRANSCRIPT</H2>
+          <H2 id="h-transcript" count={`${meeting.transcript.length} TURNS`}>TRANSCRIPT</H2>
           <div
             style={{
               display: "flex",
@@ -641,12 +642,13 @@ export function DocPane({
               ↓ Download .txt
             </button>
           </div>
-          {MEETING.transcript.map((turn) => (
+          {meeting.transcript.map((turn) => (
             <TranscriptTurnRow
               key={turn.t}
               turn={turn}
               active={activeTranscriptTime === turn.t}
               onJump={onTimeJump}
+              speakerColor={meeting.speakers.find((s) => s.name === turn.who)?.color || tokens.violet}
             />
           ))}
         </section>
@@ -666,8 +668,8 @@ export function DocPane({
             letterSpacing: "0.04em",
           }}
         >
-          <span>END · {MEETING.duration}</span>
-          <span>SHARED BY @KAN · ANALYZED MAR 14</span>
+          <span>END · {meeting.duration}</span>
+          <span>{meeting.date}</span>
         </div>
       </div>
     </main>

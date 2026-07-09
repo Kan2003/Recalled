@@ -3,10 +3,9 @@
 // components/dashboard/MeetingDetailPane.tsx
 // Right pane — selected meeting's TL;DR, action items, decisions, Ask AI.
 
-import { useState, useEffect } from "react";
 import { tokens } from "../landing/tokens";
-import type { Meeting, ActionItem } from "./data";
-import { ACTION_ITEMS, DECISIONS } from "./data";
+import type { Meeting, ActionItem, RawMeeting, RawActionItem } from "./data";
+import { toActionItems, toDecisions } from "./data";
 import { SpeakerStack } from "./SpeakerStack";
 import { AskAIPanel } from "./AskAIPanel";
 import { ExportIcon, ShareIcon, CheckIcon } from "./Icons";
@@ -162,15 +161,39 @@ function ActionRow({ item, onToggle }: { item: ActionItem; onToggle: () => void 
   );
 }
 
-export function MeetingDetailPane({ meeting }: { meeting: Meeting | undefined }) {
+export function MeetingDetailPane({
+  meeting,
+  raw,
+  onActionItemsChange,
+}: {
+  meeting: Meeting | undefined;
+  raw: RawMeeting | undefined;
+  onActionItemsChange?: (updated: RawActionItem[]) => void;
+}) {
   const router = useRouter();
-  const [actions, setActions] = useState<ActionItem[]>(ACTION_ITEMS);
+  const actions = raw ? toActionItems(raw) : [];
+  const decisions = raw ? toDecisions(raw) : [];
   const openCount = actions.filter((a) => !a.done).length;
 
-  // Reset checkboxes when selection changes (real app: fetch /api/meetings/:id)
-  useEffect(() => {
-    setActions(ACTION_ITEMS);
-  }, [meeting?.id]);
+  const toggleAction = async (item: ActionItem) => {
+    if (!raw) return;
+    const nextDone = !item.done;
+    const optimistic = raw.actionItems.map((a) =>
+      a.id === item.id ? { ...a, done: nextDone } : a,
+    );
+    onActionItemsChange?.(optimistic);
+
+    try {
+      const res = await fetch(`/api/meetings/${raw.id}/action-items/${item.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ done: nextDone }),
+      });
+      if (!res.ok) throw new Error("failed");
+    } catch {
+      onActionItemsChange?.(raw.actionItems);
+    }
+  };
 
   if (!meeting) {
     return (
@@ -314,7 +337,7 @@ export function MeetingDetailPane({ meeting }: { meeting: Meeting | undefined })
 
         {/* Body */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <Card eyebrow="// TL;DR" sticky="CLAUDE · 92S AGO">
+          <Card eyebrow="// TL;DR">
             <p
               style={{
                 fontFamily: "var(--font-geist-sans)",
@@ -331,17 +354,24 @@ export function MeetingDetailPane({ meeting }: { meeting: Meeting | undefined })
 
           <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 14 }}>
             <Card eyebrow="// ACTION ITEMS" sticky={`${openCount} OPEN · ${actions.length} TOTAL`}>
-              {actions.map((a, i) => (
-                <ActionRow
-                  key={i}
-                  item={a}
-                  onToggle={() => setActions((arr) => arr.map((x, j) => (j === i ? { ...x, done: !x.done } : x)))}
-                />
-              ))}
+              {actions.length === 0 ? (
+                <div style={{ padding: "12px 0", color: tokens.textMute, fontFamily: "var(--font-geist-mono)", fontSize: 11 }}>
+                  No action items extracted.
+                </div>
+              ) : (
+                actions.map((a) => (
+                  <ActionRow key={a.id} item={a} onToggle={() => toggleAction(a)} />
+                ))
+              )}
             </Card>
 
-            <Card eyebrow="// KEY DECISIONS" sticky={`${DECISIONS.length} EXTRACTED`}>
-              {DECISIONS.map((d, i) => (
+            <Card eyebrow="// KEY DECISIONS" sticky={`${decisions.length} EXTRACTED`}>
+              {decisions.length === 0 ? (
+                <div style={{ padding: "12px 0", color: tokens.textMute, fontFamily: "var(--font-geist-mono)", fontSize: 11 }}>
+                  No decisions extracted.
+                </div>
+              ) : (
+              decisions.map((d, i) => (
                 <div
                   key={i}
                   style={{
@@ -349,7 +379,7 @@ export function MeetingDetailPane({ meeting }: { meeting: Meeting | undefined })
                     alignItems: "flex-start",
                     gap: 10,
                     padding: "10px 0",
-                    borderBottom: i < DECISIONS.length - 1 ? `1px solid ${tokens.border}` : "none",
+                    borderBottom: i < decisions.length - 1 ? `1px solid ${tokens.border}` : "none",
                   }}
                 >
                   <span
@@ -367,12 +397,15 @@ export function MeetingDetailPane({ meeting }: { meeting: Meeting | undefined })
                     <div style={{ fontFamily: "var(--font-geist-sans)", fontSize: 13, color: tokens.text, lineHeight: 1.45 }}>
                       {d.text}
                     </div>
-                    <div style={{ fontFamily: "var(--font-geist-mono)", fontSize: 10, color: tokens.textMute, marginTop: 3 }}>
-                      ↳ {d.cite}
-                    </div>
+                    {d.cite && (
+                      <div style={{ fontFamily: "var(--font-geist-mono)", fontSize: 10, color: tokens.textMute, marginTop: 3 }}>
+                        ↳ {d.cite}
+                      </div>
+                    )}
                   </div>
                 </div>
-              ))}
+              ))
+              )}
             </Card>
           </div>
 

@@ -6,7 +6,7 @@
 import { useState, useEffect, useRef } from "react";
 import { tokens } from "../landing/tokens";
 import {
-  MEETING,
+  type MeetingDetail,
   ASK_HISTORY_INITIAL,
   ASK_SUGGESTIONS,
   ASK_SAMPLE_ANSWERS,
@@ -433,7 +433,8 @@ function ShareStatus() {
   );
 }
 
-function RelatedMeetings() {
+function RelatedMeetings({ related }: { related: MeetingDetail["related"] }) {
+  if (related.length === 0) return null;
   return (
     <div
       style={{
@@ -456,7 +457,7 @@ function RelatedMeetings() {
         // RELATED MEETINGS
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        {MEETING.related.map((m) => (
+        {related.map((m) => (
           <a
             key={m.id}
             href={`/dashboard/${m.id}`}
@@ -517,7 +518,7 @@ function RelatedMeetings() {
   );
 }
 
-export function RightRail({ onTimeJump }: { onTimeJump: (t: string) => void }) {
+export function RightRail({ meeting, onTimeJump }: { meeting: MeetingDetail; onTimeJump: (t: string) => void }) {
   return (
     <aside
       style={{
@@ -537,7 +538,7 @@ export function RightRail({ onTimeJump }: { onTimeJump: (t: string) => void }) {
       <AskAI onTimeJump={onTimeJump} />
       <div style={{ overflow: "auto", display: "flex", flexDirection: "column", gap: 16, flexShrink: 0 }}>
         <ShareStatus />
-        <RelatedMeetings />
+        <RelatedMeetings related={meeting.related} />
       </div>
     </aside>
   );
