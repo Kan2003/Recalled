@@ -6,7 +6,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { tokens } from "../landing/tokens";
-import { MEETING, CHAPTERS } from "./data";
+import { type MeetingDetail } from "./data";
 
 function TocLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -25,7 +25,7 @@ function TocLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function SpeakerShareBar() {
+function SpeakerShareBar({ speakers }: { speakers: MeetingDetail["speakers"] }) {
   return (
     <div
       style={{
@@ -37,7 +37,7 @@ function SpeakerShareBar() {
         background: tokens.surface2,
       }}
     >
-      {MEETING.speakers.map((s) => (
+      {speakers.map((s) => (
         <div key={s.name} title={`${s.name}: ${s.share}%`} style={{ width: `${s.share}%`, background: s.color, opacity: 0.85 }} />
       ))}
     </div>
@@ -48,16 +48,20 @@ function TocNav({
   active,
   onJump,
   openCount,
+  decisionCount,
+  unresolvedCount,
 }: {
   active: string;
   onJump: (id: string) => void;
   openCount: number;
+  decisionCount: number;
+  unresolvedCount: number;
 }) {
   const sections = [
     { id: "tldr",       label: "TL;DR" },
-    { id: "decisions",  label: "Key decisions", count: MEETING.decisions.length },
+    { id: "decisions",  label: "Key decisions", count: decisionCount },
     { id: "actions",    label: "Action items",  count: openCount, accent: true },
-    { id: "unresolved", label: "Unresolved",    count: MEETING.unresolved.length },
+    { id: "unresolved", label: "Unresolved",    count: unresolvedCount },
     { id: "topics",     label: "Topics" },
     { id: "transcript", label: "Transcript" },
   ];
@@ -109,7 +113,7 @@ function TocNav({
   );
 }
 
-function AudioPlayer() {
+function AudioPlayer({ duration }: { duration: string }) {
   const [playing, setPlaying] = useState(false);
   const progress = 34; // %, static demo
   return (
@@ -150,7 +154,7 @@ function AudioPlayer() {
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontFamily: "var(--font-geist-mono)", fontSize: 10.5, color: tokens.text, letterSpacing: "0.02em" }}>
-            14:32 <span style={{ color: tokens.textMute }}>/ {MEETING.duration}</span>
+            00:00 <span style={{ color: tokens.textMute }}>/ {duration}</span>
           </div>
         </div>
         <button
@@ -207,61 +211,14 @@ function AudioPlayer() {
   );
 }
 
-function Chapters({ onJump }: { onJump: (t: string) => void }) {
-  return (
-    <div>
-      <TocLabel>// CHAPTERS · AUTO-DETECTED</TocLabel>
-      {CHAPTERS.map((c) => (
-        <button
-          key={c.t}
-          onClick={() => onJump(c.t)}
-          style={{
-            display: "flex",
-            alignItems: "flex-start",
-            gap: 10,
-            width: "100%",
-            padding: "6px 0",
-            background: "transparent",
-            border: "none",
-            color: "inherit",
-            cursor: "pointer",
-            textAlign: "left",
-          }}
-        >
-          <span
-            style={{
-              fontFamily: "var(--font-geist-mono)",
-              fontSize: 10.5,
-              color: tokens.cyan,
-              fontWeight: 600,
-              minWidth: 44,
-              paddingTop: 2,
-            }}
-          >
-            {c.t}
-          </span>
-          <span
-            style={{
-              fontFamily: "var(--font-geist-sans)",
-              fontSize: 12.5,
-              color: tokens.textDim,
-              lineHeight: 1.4,
-            }}
-          >
-            {c.label}
-          </span>
-        </button>
-      ))}
-    </div>
-  );
-}
-
 export function TocPane({
+  meeting,
   activeSection,
   onJumpSection,
   onJumpTime,
   openActionCount,
 }: {
+  meeting: MeetingDetail;
   activeSection: string;
   onJumpSection: (id: string) => void;
   onJumpTime: (t: string) => void;
@@ -308,47 +265,53 @@ export function TocPane({
         <div style={{ fontFamily: "var(--font-geist-mono)", fontSize: 11.5, color: tokens.text, lineHeight: 1.8 }}>
           <div>
             <span style={{ color: tokens.textMute }}>WHEN </span>
-            {MEETING.date}
+            {meeting.date}
           </div>
           <div>
             <span style={{ color: tokens.textMute }}>TIME </span>
-            {MEETING.time} · {MEETING.duration}
+            {meeting.time} · {meeting.duration}
           </div>
           <div>
             <span style={{ color: tokens.textMute }}>LANG </span>
-            {MEETING.language}
+            {meeting.language}
           </div>
         </div>
       </div>
 
-      <div>
-        <TocLabel>// SPEAKERS · {MEETING.speakers.length}</TocLabel>
-        <SpeakerShareBar />
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          {MEETING.speakers.map((s) => (
-            <div
-              key={s.name}
-              style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-geist-sans)", fontSize: 11.5 }}
-            >
-              <div style={{ width: 8, height: 8, borderRadius: 99, background: s.color, flexShrink: 0 }} />
-              <span style={{ color: tokens.text, flex: 1 }}>
-                {s.name} <span style={{ color: tokens.textMute }}>· {s.role}</span>
-              </span>
-              <span style={{ fontFamily: "var(--font-geist-mono)", fontSize: 10, color: tokens.textMute }}>{s.share}%</span>
-            </div>
-          ))}
+      {meeting.speakers.length > 0 && (
+        <div>
+          <TocLabel>// SPEAKERS · {meeting.speakers.length}</TocLabel>
+          <SpeakerShareBar speakers={meeting.speakers} />
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            {meeting.speakers.map((s) => (
+              <div
+                key={s.name}
+                style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-geist-sans)", fontSize: 11.5 }}
+              >
+                <div style={{ width: 8, height: 8, borderRadius: 99, background: s.color, flexShrink: 0 }} />
+                <span style={{ color: tokens.text, flex: 1 }}>
+                  {s.name} <span style={{ color: tokens.textMute }}>· {s.role}</span>
+                </span>
+                <span style={{ fontFamily: "var(--font-geist-mono)", fontSize: 10, color: tokens.textMute }}>{s.share}%</span>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       <div style={{ marginLeft: -10, marginRight: -10 }}>
-        <TocNav active={activeSection} onJump={onJumpSection} openCount={openActionCount} />
+        <TocNav
+          active={activeSection}
+          onJump={onJumpSection}
+          openCount={openActionCount}
+          decisionCount={meeting.decisions.length}
+          unresolvedCount={meeting.unresolved.length}
+        />
       </div>
-
-      <Chapters onJump={onJumpTime} />
 
       <div style={{ flex: 1 }} />
 
-      <AudioPlayer />
+      <AudioPlayer duration={meeting.duration} />
     </aside>
   );
 }

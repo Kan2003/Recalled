@@ -1,12 +1,14 @@
 import { auth } from "@/lib/auth";
 import OpenAI from "openai";
 
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
+// Groq exposes an OpenAI-compatible API, so we reuse the OpenAI SDK and just
+// point it at Groq's endpoint for Whisper speech-to-text.
+const groq = new OpenAI({
+    apiKey: process.env.GROQ_API_KEY,
+    baseURL: "https://api.groq.com/openai/v1",
 });
 
-export async function  POST(req:Request) {
-
+export async function POST(req: Request) {
     const session = await auth();
 
     if (!session?.user?.id) {
@@ -20,14 +22,19 @@ export async function  POST(req:Request) {
     if(!file) {
         return Response.json({error : "No audio file provided"}, { status: 400 });
     }
-    
-    const transcription = await openai.audio.transcriptions.create({
-        file: file,
-        model: "whisper-1",
-        response_format: "json",
-        language: "en",
-        
-    });
 
-    return Response.json({transcript : transcription.text});
+    try {
+        const transcription = await groq.audio.transcriptions.create({
+            file: file,
+            model: "whisper-large-v3-turbo",
+            response_format: "json",
+            language: "en",
+        });
+
+        return Response.json({ transcript: transcription.text });
+    } catch (err) {
+        console.error("[/api/transcribe] transcription failed:", err);
+        const message = err instanceof Error ? err.message : "Transcription failed";
+        return Response.json({ error: message }, { status: 500 });
+    }
 }
