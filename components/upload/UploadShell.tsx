@@ -13,12 +13,12 @@ import {
   SourceTabs,
   AudioSource,
   PasteSource,
-  RecordSource,
   URLSource,
   type SourceKind,
   type SelectedFile,
 } from "./Sources";
 import { MetadataForm, META_DEFAULTS, type MetaState } from "./MetadataForm";
+import { ReviewPanel, type AnalysisResult } from "./ReviewPanel";
 
 export function UploadShell() {
   const router = useRouter();
@@ -37,47 +37,80 @@ export function UploadShell() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Once analysis comes back we stop and let the user review/edit it before
+  // anything is persisted — `transcript`/`analysis` hold that pending state.
+  const [phase, setPhase] = useState<"input" | "review">("input");
+  const [transcript, setTranscript] = useState<string | null>(null);
+  const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
+
   // Has the user supplied a valid source?
   const hasSource =
     (activeSource === "audio" && !!file) ||
     (activeSource === "paste" && pasteText.trim().length > 50) ||
-    (activeSource === "url"   && /^https?:\/\//.test(url)) ||
-    (activeSource === "record");
+    (activeSource === "url"   && /^https?:\/\//.test(url));
 
-  const handleSubmit = async () => {
+  const step = phase === "review" ? 3 : busy ? 2 : 1;
+
+  const handleAnalyze = async () => {
     if (!hasSource || busy) return;
     setBusy(true);
     setError(null);
 
     try {
       // 1. Get a transcript — from Whisper for audio/video, or straight from
-      //    pasted text. (record/url sources aren't wired up yet.)
-      let transcript: string;
+      //    pasted text. (url source isn't wired up yet.)
+      let text: string;
       if (activeSource === "audio" && file?.raw) {
         const formData = new FormData();
         formData.append("audio", file.raw);
         const res = await fetch("/api/transcribe", { method: "POST", body: formData });
         const data = await res.json();
         if (!res.ok) throw new Error(data?.error || "Transcription failed");
-        transcript = data.transcript;
+        text = data.transcript;
       } else if (activeSource === "paste") {
-        transcript = pasteText.trim();
+        text = pasteText.trim();
       } else {
         throw new Error("This source isn't supported yet — use audio or pasted text.");
       }
 
-      if (!transcript) throw new Error("No transcript to analyze.");
+      if (!text) throw new Error("No transcript to analyze.");
 
-      // 2. Analyze the transcript → { summary, decisions, actionItems, topics }
+      // 2. Analyze the transcript → { summary, decisions, actionItems, topics }.
+      //    Stop here — don't save yet. The user reviews/edits this next.
       const analyzeRes = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transcript }),
+        body: JSON.stringify({ transcript: text }),
       });
-      const analysis = await analyzeRes.json();
-      if (!analyzeRes.ok) throw new Error(analysis?.error || "Analysis failed");
+      const result = await analyzeRes.json();
+      if (!analyzeRes.ok) throw new Error(result?.error || "Analysis failed");
 
-      // 3. Persist the meeting + its action items
+      setTranscript(text);
+      setAnalysis({
+        summary: result.summary ?? "",
+        decisions: Array.isArray(result.decisions) ? result.decisions : [],
+        topics: Array.isArray(result.topics) ? result.topics : [],
+        actionItems: Array.isArray(result.actionItems) ? result.actionItems : [],
+      });
+      setPhase("review");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleBackToEdit = () => {
+    setPhase("input");
+    setError(null);
+  };
+
+  const handleConfirmSave = async () => {
+    if (!analysis || !transcript || busy) return;
+    setBusy(true);
+    setError(null);
+
+    try {
       const saveRes = await fetch("/api/meetings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -93,7 +126,6 @@ export function UploadShell() {
       const meeting = await saveRes.json();
       if (!saveRes.ok) throw new Error(meeting?.error || "Failed to save meeting");
 
-      // 4. Off to the meeting detail page
       router.push(`/dashboard/${meeting.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -105,8 +137,52 @@ export function UploadShell() {
     <div style={{ minHeight: "100vh", background: tokens.bg, color: tokens.text, position: "relative" }}>
       <AuroraBg />
       <div style={{ position: "relative", zIndex: 1 }}>
-        <UploadHeader step={1} />
+        <UploadHeader step={step} />
 
+        {phase === "review" && analysis ? (
+          <main style={{ maxWidth: 760, margin: "0 auto", padding: "36px 40px 60px" }}>
+            <div style={{ marginBottom: 22 }}>
+              <Eyebrow accent={tokens.cyan}>// STEP 3 · REVIEW BEFORE SAVING</Eyebrow>
+              <h1
+                style={{
+                  fontFamily: "var(--font-geist-sans)",
+                  fontSize: 30,
+                  fontWeight: 500,
+                  letterSpacing: "-0.025em",
+                  color: tokens.text,
+                  margin: 0,
+                  lineHeight: 1.1,
+                }}
+              >
+                Here&apos;s what we heard
+              </h1>
+              <p
+                style={{
+                  fontFamily: "var(--font-geist-sans)",
+                  fontSize: 14,
+                  color: tokens.textDim,
+                  margin: "8px 0 0",
+                  maxWidth: 560,
+                  lineHeight: 1.55,
+                }}
+              >
+                Edit anything that&apos;s off, then save. Nothing is written to your dashboard until you confirm.
+              </p>
+            </div>
+
+            <ReviewPanel
+              title={meta.title}
+              analysis={analysis}
+              onChange={setAnalysis}
+              includeSummary={meta.summarize}
+              includeActions={meta.actions}
+              busy={busy}
+              error={error}
+              onBack={handleBackToEdit}
+              onConfirm={handleConfirmSave}
+            />
+          </main>
+        ) : (
         <main
           style={{
             maxWidth: 1280,
@@ -144,7 +220,7 @@ export function UploadShell() {
                   lineHeight: 1.55,
                 }}
               >
-                Audio, text, live recording, or a URL — pick whichever you&apos;ve got. Recalled handles the rest.
+                Audio, text, or a URL — pick whichever you&apos;ve got. Recalled handles the rest.
               </p>
             </div>
 
@@ -152,7 +228,6 @@ export function UploadShell() {
               <SourceTabs active={activeSource} onChange={setActiveSource} />
               {activeSource === "audio"  && <AudioSource file={file} onFileChange={setFile} />}
               {activeSource === "paste"  && <PasteSource value={pasteText} onChange={setPaste} />}
-              {activeSource === "record" && <RecordSource />}
               {activeSource === "url"    && <URLSource value={url} onChange={setUrl} />}
             </Card>
 
@@ -192,10 +267,11 @@ export function UploadShell() {
               busy={busy}
               error={error}
               onCancel={() => router.push("/dashboard")}
-              onSubmit={handleSubmit}
+              onSubmit={handleAnalyze}
             />
           </div>
         </main>
+        )}
       </div>
     </div>
   );

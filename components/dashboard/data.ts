@@ -1,6 +1,5 @@
 // components/dashboard/data.ts
-// Types + mock data. Mirrors the Prisma Meeting / ActionItem models in the
-// README, so swapping in `/api/meetings` data later is mostly a fetch swap.
+// Types + mappers from the `/api/meetings` Prisma shape to the UI shape.
 
 export type Speaker = {
   initials: string;
@@ -22,6 +21,7 @@ export type Meeting = {
 };
 
 export type ActionItem = {
+  id: string;
   who: string;
   what: string;
   due: string;
@@ -33,136 +33,80 @@ export type Decision = {
   cite: string;
 };
 
-// ── Mock meetings ─────────────────────────────────────────────────────────
-export const MEETINGS: Meeting[] = [
-  {
-    id: "mtg_2403",
-    title: "Q1 launch sync",
-    when: "Now",
-    duration: "14:32",
-    speakers: [
-      { initials: "MK", name: "Maya · PM",      color: "#a78bfa" },
-      { initials: "DC", name: "Devon · Eng",    color: "#22d3ee" },
-      { initials: "PR", name: "Priya · Design", color: "#f0abfc" },
-      { initials: "JL", name: "Jordan · QA",    color: "#34d399" },
-    ],
-    summary:
-      "Launch locked to March 14, contingent on QA wrapping by the 10th. Devon owns the cutover; Priya is finalizing onboarding revisions and empty-states.",
-    tags: ["launch", "q1"],
-    actions: { total: 4, open: 3 },
-    decisions: 3,
-    live: true,
-  },
-  {
-    id: "mtg_2390",
-    title: "Onboarding teardown",
-    when: "Today · 09:15",
-    duration: "38:42",
-    speakers: [
-      { initials: "PR", name: "Priya", color: "#f0abfc" },
-      { initials: "KS", name: "Kan",   color: "#22d3ee" },
-      { initials: "AL", name: "Alex",  color: "#a78bfa" },
-    ],
-    summary:
-      "Reduced first-run steps from 7 to 3. Priya to ship empty-states by Friday. Skip-button placement still TBD.",
-    tags: ["onboarding", "design"],
-    actions: { total: 5, open: 1 },
-    decisions: 2,
-  },
-  {
-    id: "mtg_2387",
-    title: "Hiring panel · Dana K.",
-    when: "Yesterday",
-    duration: "45:10",
-    speakers: [
-      { initials: "KS", name: "Kan",    color: "#22d3ee" },
-      { initials: "DK", name: "Dana",   color: "#fbbf24" },
-      { initials: "MK", name: "Maya",   color: "#a78bfa" },
-      { initials: "JL", name: "Jordan", color: "#34d399" },
-      { initials: "DC", name: "Devon",  color: "#60a5fa" },
-    ],
-    summary:
-      "Strong on systems thinking and trade-off reasoning. Needs a follow-up on infra depth. Recommended: bring back for system-design loop.",
-    tags: ["hiring"],
-    actions: { total: 2, open: 0 },
-    decisions: 1,
-  },
-  {
-    id: "mtg_2385",
-    title: "Customer call · Acme Co.",
-    when: "Yesterday",
-    duration: "28:50",
-    speakers: [
-      { initials: "KS", name: "Kan",  color: "#22d3ee" },
-      { initials: "AC", name: "Acme", color: "#f0abfc" },
-    ],
-    summary:
-      "Renewal looks good. Asked for SOC2 docs and a roadmap walkthrough next week. No blockers.",
-    tags: ["customer", "renewal"],
-    actions: { total: 4, open: 3 },
-    decisions: 2,
-  },
-  {
-    id: "mtg_2380",
-    title: "Eng all-hands",
-    when: "Mar 11",
-    duration: "1:02:18",
-    speakers: Array.from({ length: 12 }, (_, i) => ({
-      initials: ["MK","DC","PR","JL","KS","AL","RS","NK","TY","BV","MJ","OP"][i],
-      color: "#a78bfa",
-    })),
-    summary:
-      "Q1 roadmap walkthrough. Postgres → Neon migration on track for week 2. Cron rate-limit changes coming next sprint.",
-    tags: ["eng", "roadmap"],
-    actions: { total: 1, open: 1 },
-    decisions: 4,
-  },
-  {
-    id: "mtg_2375",
-    title: "Design crit",
-    when: "Mar 10",
-    duration: "52:04",
-    speakers: [
-      { initials: "PR", name: "Priya", color: "#f0abfc" },
-      { initials: "KS", name: "Kan",   color: "#22d3ee" },
-      { initials: "AL", name: "Alex",  color: "#a78bfa" },
-      { initials: "RS", name: "Riley", color: "#fbbf24" },
-    ],
-    summary:
-      "Settled on new typography system: Geist + Geist Mono with Instrument Serif for editorial moments. Tokens to be merged this week.",
-    tags: ["design", "tokens"],
-    actions: { total: 6, open: 0 },
-    decisions: 3,
-  },
-  {
-    id: "mtg_2370",
-    title: "Customer call · Globex",
-    when: "Mar 09",
-    duration: "36:11",
-    speakers: [
-      { initials: "KS", name: "Kan",    color: "#22d3ee" },
-      { initials: "GL", name: "Globex", color: "#34d399" },
-    ],
-    summary:
-      "New feature request: outbound API webhook for action items. Triaged for Q2. No urgent renewal risk.",
-    tags: ["customer", "feedback"],
-    actions: { total: 2, open: 2 },
-    decisions: 1,
-  },
-];
+// ── Raw shape returned by GET /api/meetings and GET /api/meetings/:id ──────
+export type RawActionItem = {
+  id: string;
+  task: string;
+  owner: string | null;
+  dueDate: string | null;
+  done: boolean;
+};
 
-export const ACTION_ITEMS: ActionItem[] = [
-  { who: "Devon", what: "Send launch checklist to #launch channel", due: "Today, EOD", done: false },
-  { who: "Priya", what: "Finalize onboarding revisions",            due: "Friday",      done: false },
-  { who: "Priya", what: "Share empty-states with marketing",        due: "Friday",      done: false },
-  { who: "Maya",  what: "Confirm early-access pricing tier",        due: "Next sync",   done: false },
-];
+export type RawMeeting = {
+  id: string;
+  title: string;
+  transcript: string;
+  summary: string | null;
+  decisions: unknown;
+  topics: unknown;
+  createdAt: string;
+  actionItems: RawActionItem[];
+};
 
-export const DECISIONS: Decision[] = [
-  { text: "Launch date locked to March 14", cite: "00:00" },
-  { text: "QA cutoff is March 10",          cite: "00:14" },
-  { text: "Devon owns the cutover",         cite: "00:32" },
-];
+function formatWhen(createdAt: string): string {
+  const date = new Date(createdAt);
+  const now = new Date();
+  const isSameDay = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+
+  if (isSameDay(date, now)) {
+    return `Today · ${date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+  }
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (isSameDay(date, yesterday)) return "Yesterday";
+
+  return date.toLocaleDateString([], { month: "short", day: "2-digit" });
+}
+
+function formatDue(dueDate: string | null): string {
+  if (!dueDate) return "No due date";
+  return new Date(dueDate).toLocaleDateString([], { month: "short", day: "2-digit" });
+}
+
+export function toMeetingSummary(raw: RawMeeting): Meeting {
+  const tags = Array.isArray(raw.topics) ? (raw.topics as string[]) : [];
+  const decisions = Array.isArray(raw.decisions) ? (raw.decisions as string[]).length : 0;
+  const open = raw.actionItems.filter((a) => !a.done).length;
+
+  return {
+    id: raw.id,
+    title: raw.title,
+    when: formatWhen(raw.createdAt),
+    duration: "—",
+    speakers: [],
+    summary: raw.summary ?? "No summary yet.",
+    tags,
+    actions: { total: raw.actionItems.length, open },
+    decisions,
+    live: false,
+  };
+}
+
+export function toActionItems(raw: RawMeeting): ActionItem[] {
+  return raw.actionItems.map((a) => ({
+    id: a.id,
+    who: a.owner ?? "Unassigned",
+    what: a.task,
+    due: formatDue(a.dueDate),
+    done: a.done,
+  }));
+}
+
+export function toDecisions(raw: RawMeeting): Decision[] {
+  const decisions = Array.isArray(raw.decisions) ? (raw.decisions as string[]) : [];
+  return decisions.map((text) => ({ text, cite: "" }));
+}
 
 export const ASK_SUGGESTIONS = [
   "Recap in one sentence",

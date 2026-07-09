@@ -20,7 +20,7 @@
 ## ✨ Features
 
 - 🎤 **Audio Transcription** — Upload meeting recordings, auto-transcribed via OpenAI Whisper
-- 🤖 **AI Summarization** — Claude AI extracts summaries, key decisions & topics
+- 🤖 **AI Summarization** — Groq (Llama 3.3 70B) extracts summaries, key decisions & topics
 - ✅ **Action Item Extraction** — Auto-detects tasks, owners, and due dates from conversation
 - 💬 **Ask Your Meeting** — Chat with any past meeting using natural language Q&A
 - 🔗 **Shareable Summaries** — Share meeting recaps via a unique public URL
@@ -38,8 +38,8 @@
 | **Language** | TypeScript |
 | **Database** | PostgreSQL (Neon) + Prisma ORM |
 | **Auth** | NextAuth.js v5 — Google Provider |
-| **AI — Summarization** | Anthropic Claude API |
-| **AI — Transcription** | OpenAI Whisper API |
+| **AI — Summarization** | Groq API (Llama 3.3 70B) |
+| **AI — Transcription** | Groq-hosted Whisper (`whisper-large-v3-turbo`) |
 | **Email** | Resend |
 | **Styling** | Tailwind CSS |
 | **Deployment** | Vercel |
@@ -66,8 +66,8 @@ recalled/
 │       │   └── [id]/
 │       │       ├── route.ts    # GET single meeting
 │       │       └── ask/        # POST — Ask AI about a meeting
-│       ├── transcribe/         # Whisper transcription
-│       ├── analyze/            # Claude AI analysis
+│       ├── transcribe/         # Groq-hosted Whisper transcription
+│       ├── analyze/            # Groq AI analysis
 │       └── cron/reminders/     # Scheduled reminders
 ├── components/
 │   ├── MeetingCard.tsx
@@ -76,8 +76,8 @@ recalled/
 │   └── TranscriptViewer.tsx
 ├── lib/
 │   ├── prisma.ts               # Prisma DB client
-│   ├── claude.ts               # Claude API wrapper
-│   ├── whisper.ts              # Whisper API wrapper
+│   ├── claude.ts               # (unused stub — analysis client is inlined in app/api/analyze/route.ts)
+│   ├── whisper.ts              # (unused stub — transcription client is inlined in app/api/transcribe/route.ts)
 │   └── email.ts                # Resend email helpers
 └── prisma/
     └── schema.prisma
@@ -130,8 +130,7 @@ model ActionItem {
 - Node.js 18+
 - PostgreSQL database (free tier at [Neon](https://neon.tech))
 - Google OAuth credentials ([Google Cloud Console](https://console.cloud.google.com))
-- Anthropic API key ([console.anthropic.com](https://console.anthropic.com))
-- OpenAI API key ([platform.openai.com](https://platform.openai.com))
+- Groq API key ([console.groq.com](https://console.groq.com)) — used for both transcription and analysis
 - Resend API key ([resend.com](https://resend.com))
 
 ---
@@ -164,8 +163,8 @@ AUTH_GOOGLE_SECRET="your_google_client_secret"
 NEXTAUTH_URL="http://localhost:3000"
 
 # AI
-ANTHROPIC_API_KEY="your_anthropic_api_key"
-OPENAI_API_KEY="your_openai_api_key"
+GROQ_API_KEY="your_groq_api_key"           # transcription (Whisper)
+GROQ_ANALYZE_API_KEY="your_groq_api_key"   # analysis (Llama 3.3 70B)
 
 # Email
 RESEND_API_KEY="your_resend_api_key"

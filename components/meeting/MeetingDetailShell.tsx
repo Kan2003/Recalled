@@ -5,16 +5,16 @@
 
 import { useState, useEffect, useRef } from "react";
 import { tokens } from "../landing/tokens";
-import { MEETING, type MeetingAction } from "./data";
+import { type MeetingDetail } from "./data";
 import { TocPane } from "./TocPane";
 import { DocPane } from "./DocPane";
 import { RightRail } from "./RightRail";
 
 const SECTION_IDS = ["tldr", "decisions", "actions", "unresolved", "topics", "transcript"];
 
-export function MeetingDetailShell() {
+export function MeetingDetailShell({ meeting }: { meeting: MeetingDetail }) {
   // Actions live at the top so the TOC count + the doc stay in sync.
-  const [actions, setActions] = useState<MeetingAction[]>(MEETING.actions);
+  const [actions, setActions] = useState(meeting.actions);
   const openCount = actions.filter((a) => !a.done).length;
 
   const [activeSection, setActiveSection] = useState<string>("tldr");
@@ -61,6 +61,7 @@ export function MeetingDetailShell() {
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: tokens.bg, color: tokens.text }}>
       <TocPane
+        meeting={meeting}
         activeSection={activeSection}
         onJumpSection={jumpToSection}
         onJumpTime={jumpToTime}
@@ -77,13 +78,14 @@ export function MeetingDetailShell() {
         }}
       >
         <DocPane
+          meeting={meeting}
           actions={actions}
           setActions={setActions}
           activeTranscriptTime={activeTime}
           onTimeJump={jumpToTime}
         />
       </div>
-      <RightRail onTimeJump={jumpToTime} />
+      <RightRail meeting={meeting} onTimeJump={jumpToTime} />
     </div>
   );
 }
