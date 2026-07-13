@@ -409,7 +409,7 @@ export function MeetingDetailPane({
             </Card>
           </div>
 
-          <AskAIPanel />
+          <AskAIPanel  meetingId={meeting.id}/>
 
           {/* Transcript footer */}
           <div

@@ -398,56 +398,7 @@ export function MetadataForm({
         sub="Daily nudge until each action is checked off."
       />
 
-      <div
-        style={{
-          marginTop: 20,
-          padding: "12px 14px",
-          background: tokens.surface2,
-          border: `1px solid ${tokens.border}`,
-          borderRadius: 9,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: 99,
-              background: "#34d399",
-              boxShadow: "0 0 8px #34d39966",
-            }}
-          />
-          <span
-            style={{
-              fontFamily: "var(--font-geist-mono)",
-              fontSize: 11,
-              color: tokens.textDim,
-              letterSpacing: "0.04em",
-            }}
-          >
-            ESTIMATED
-          </span>
-        </div>
-        <div
-          style={{
-            display: "flex",
-            gap: 18,
-            fontFamily: "var(--font-geist-mono)",
-            fontSize: 11.5,
-            color: tokens.text,
-          }}
-        >
-          <span>
-            <span style={{ color: tokens.textMute }}>TIME </span>~85s
-          </span>
-          <span>
-            <span style={{ color: tokens.textMute }}>COST </span>$0.04
-          </span>
-        </div>
-      </div>
+
 
       <div style={{ marginTop: 22, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
         <button
