@@ -2,54 +2,94 @@
 
 // components/dashboard/AskAIPanel.tsx
 // Persistent chat-with-the-meeting widget. Manages its own state — input,
-// last exchange, typewriter for the streamed answer.
+// chat history, typewriter for the streamed answer. History is persisted
+// to localStorage per meeting so a reload doesn't lose the conversation.
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { tokens } from "../landing/tokens";
 import { ASK_SUGGESTIONS } from "./data";
 
 const INITIAL_Q = "What did we decide about the launch date?";
 const INITIAL_A = "March 14. Devon is owning the cutover, contingent on QA wrapping by the 10th.";
 
-export function AskAIPanel() {
-  const [value, setValue] = useState("");
-  const [lastQ, setLastQ] = useState(INITIAL_Q);
-  const [lastA, setLastA] = useState("");
-  const [typing, setTyping] = useState(false);
+type ChatMessage = { q: string; a: string; error?: boolean };
 
-  // Type out the initial canned answer on mount so the panel feels alive.
+function storageKey(meetingId: string) {
+  return `recalled:ask:${meetingId}`;
+}
+
+export function AskAIPanel({ meetingId }: { meetingId: string }) {
+  const [value, setValue] = useState("");
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [typing, setTyping] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const endRef = useRef<HTMLDivElement>(null);
+
+  // Load saved history on mount; if none, play the canned intro exchange.
   useEffect(() => {
+    const saved = localStorage.getItem(storageKey(meetingId));
+    if (saved) {
+      setMessages(JSON.parse(saved));
+      return;
+    }
+
+    setMessages([{ q: INITIAL_Q, a: "" }]);
     setTyping(true);
     let i = 0;
     const id = setInterval(() => {
       i += 1;
-      setLastA(INITIAL_A.slice(0, i));
+      setMessages([{ q: INITIAL_Q, a: INITIAL_A.slice(0, i) }]);
       if (i >= INITIAL_A.length) {
         clearInterval(id);
         setTyping(false);
       }
     }, 18);
     return () => clearInterval(id);
-  }, []);
+  }, [meetingId]);
 
-  const submit = () => {
+  // Persist history whenever it changes.
+  useEffect(() => {
+    if (messages.length === 0) return;
+    localStorage.setItem(storageKey(meetingId), JSON.stringify(messages));
+  }, [messages, meetingId]);
+
+  // Keep the latest exchange in view as it streams in.
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [messages, loading, typing]);
+
+  const submit = async () => {
     if (!value.trim()) return;
-    setLastQ(value);
-    setLastA("");
-    setTyping(true);
+    const question = value;
+    setMessages((prev) => [...prev, { q: question, a: "" }]);
+    setTyping(false);
+    setLoading(true);
     setValue("");
-    // Real impl: POST /api/meetings/:id/ask and stream the response.
-    const sample =
-      "Looking through the transcript… I can see this was discussed around 00:21 with both Devon and Maya. Want me to pull the exact quote?";
-    let i = 0;
-    const id = setInterval(() => {
-      i += 1;
-      setLastA(sample.slice(0, i));
-      if (i >= sample.length) {
-        clearInterval(id);
-        setTyping(false);
-      }
-    }, 14);
+
+    try {
+      const res = await fetch(`/api/meetings/${meetingId}/ask`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: {
+          question,
+          meetingId,
+        } }),
+      });
+      const result = await res.json();
+      setMessages((prev) => {
+        const next = [...prev];
+        next[next.length - 1] = { q: question, a: result.answer ?? "" };
+        return next;
+      });
+    } catch (err) {
+      setMessages((prev) => {
+        const next = [...prev];
+        next[next.length - 1] = { q: question, a: "Something went wrong, please try again.", error: true };
+        return next;
+      })
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -110,73 +150,60 @@ export function AskAIPanel() {
           </span>
         </div>
 
-        {lastQ && (
-          <div style={{ marginBottom: 14, display: "flex", flexDirection: "column", gap: 10 }}>
-            <div
-              style={{
-                alignSelf: "flex-end",
-                maxWidth: "85%",
-                background: "rgba(255,255,255,0.05)",
-                border: `1px solid ${tokens.border}`,
-                padding: "8px 12px",
-                borderRadius: 9,
-                fontFamily: "var(--font-geist-sans)",
-                fontSize: 13,
-                color: tokens.text,
-                lineHeight: 1.4,
-              }}
-            >
-              {lastQ}
-            </div>
-            <div
-              style={{
-                alignSelf: "flex-start",
-                maxWidth: "95%",
-                background: `linear-gradient(135deg, ${tokens.violet}10, ${tokens.cyan}10)`,
-                border: `1px solid ${tokens.cyan}33`,
-                padding: "10px 12px",
-                borderRadius: 9,
-                fontFamily: "var(--font-geist-sans)",
-                fontSize: 13,
-                color: tokens.text,
-                lineHeight: 1.5,
-              }}
-            >
-              {lastA}
-              {typing && (
-                <span style={{ color: tokens.cyan, marginLeft: 2, animation: "recalled-blink 0.9s steps(2,end) infinite" }}>▌</span>
-              )}
-              {!typing && lastA && (
-                <div
-                  style={{
-                    marginTop: 8,
-                    paddingTop: 8,
-                    borderTop: `1px solid ${tokens.border}`,
-                    display: "flex",
-                    gap: 6,
-                    alignItems: "center",
-                  }}
-                >
-                  <span style={{ fontFamily: "var(--font-geist-mono)", fontSize: 9.5, color: tokens.textMute, letterSpacing: "0.04em" }}>CITES</span>
-                  {["00:00", "00:14", "00:32"].map((c) => (
-                    <span
-                      key={c}
-                      style={{
-                        fontFamily: "var(--font-geist-mono)",
-                        fontSize: 10,
-                        color: tokens.cyan,
-                        padding: "1px 5px",
-                        border: `1px solid ${tokens.cyan}44`,
-                        borderRadius: 4,
-                        cursor: "pointer",
-                      }}
-                    >
-                      ↳ {c}
-                    </span>
-                  ))}
+        {messages.length > 0 && (
+          <div style={{ marginBottom: 14, display: "flex", flexDirection: "column", gap: 14, maxHeight: 360, overflowY: "auto" }}>
+            {messages.map((m, i) => {
+              const isLast = i === messages.length - 1;
+              return (
+                <div key={i} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div
+                    style={{
+                      alignSelf: "flex-end",
+                      maxWidth: "85%",
+                      background: "rgba(255,255,255,0.05)",
+                      border: `1px solid ${tokens.border}`,
+                      padding: "8px 12px",
+                      borderRadius: 9,
+                      fontFamily: "var(--font-geist-sans)",
+                      fontSize: 13,
+                      color: tokens.text,
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    {m.q}
+                  </div>
+                  <div
+                    style={{
+                      alignSelf: "flex-start",
+                      maxWidth: "95%",
+                      background: `linear-gradient(135deg, ${tokens.violet}10, ${tokens.cyan}10)`,
+                      border: `1px solid ${tokens.cyan}33`,
+                      padding: "10px 12px",
+                      borderRadius: 9,
+                      fontFamily: "var(--font-geist-sans)",
+                      fontSize: 13,
+                      color: tokens.text,
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {isLast && loading ? (
+                      <span style={{ color: tokens.textMute, fontStyle: "italic" }}>
+                        Fetching meeting detail
+                        <span style={{ color: tokens.cyan, marginLeft: 2, animation: "recalled-blink 0.9s steps(2,end) infinite" }}>....</span>
+                      </span>
+                    ) : m.error ? (
+                      <span style={{ color: "#f87171" }}>{m.a}</span>
+                    ) : (
+                      m.a
+                    )}
+                    {isLast && typing && (
+                      <span style={{ color: tokens.cyan, marginLeft: 2, animation: "recalled-blink 0.9s steps(2,end) infinite" }}>▌</span>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
+              );
+            })}
+            <div ref={endRef} />
           </div>
         )}
 
