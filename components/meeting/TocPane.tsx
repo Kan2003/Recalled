@@ -1,9 +1,8 @@
 "use client";
 
 // components/meeting/TocPane.tsx
-// Left rail: back link, meta, speaker share, TOC, chapters, sticky audio player.
+// Left rail: back link, meta, speaker share, TOC.
 
-import { useState } from "react";
 import Link from "next/link";
 import { tokens } from "../landing/tokens";
 import { type MeetingDetail } from "./data";
@@ -113,104 +112,6 @@ function TocNav({
   );
 }
 
-function AudioPlayer({ duration }: { duration: string }) {
-  const [playing, setPlaying] = useState(false);
-  const progress = 34; // %, static demo
-  return (
-    <div
-      style={{
-        padding: 12,
-        background: tokens.surface2,
-        border: `1px solid ${tokens.border}`,
-        borderRadius: 10,
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-        <button
-          onClick={() => setPlaying(!playing)}
-          style={{
-            width: 28,
-            height: 28,
-            borderRadius: 99,
-            background: `linear-gradient(135deg, ${tokens.violet}, ${tokens.cyan})`,
-            border: "none",
-            color: tokens.bg,
-            display: "grid",
-            placeItems: "center",
-            cursor: "pointer",
-            flexShrink: 0,
-          }}
-        >
-          {playing ? (
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
-              <rect x="6" y="4" width="4" height="16" rx="1" />
-              <rect x="14" y="4" width="4" height="16" rx="1" />
-            </svg>
-          ) : (
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M6 4l14 8-14 8z" />
-            </svg>
-          )}
-        </button>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: "var(--font-geist-mono)", fontSize: 10.5, color: tokens.text, letterSpacing: "0.02em" }}>
-            00:00 <span style={{ color: tokens.textMute }}>/ {duration}</span>
-          </div>
-        </div>
-        <button
-          style={{
-            width: 22,
-            height: 22,
-            borderRadius: 5,
-            background: "transparent",
-            border: `1px solid ${tokens.border}`,
-            color: tokens.textDim,
-            cursor: "pointer",
-            display: "grid",
-            placeItems: "center",
-            fontFamily: "var(--font-geist-mono)",
-            fontSize: 9,
-            fontWeight: 600,
-          }}
-        >
-          1×
-        </button>
-      </div>
-      <div style={{ display: "flex", alignItems: "end", gap: 1.5, height: 22, position: "relative" }}>
-        {Array.from({ length: 60 }).map((_, i) => {
-          const h = 4 + Math.abs(Math.sin(i * 0.5) + Math.sin(i * 0.27)) * 8;
-          const passed = (i / 60) * 100 < progress;
-          return (
-            <div
-              key={i}
-              style={{
-                width: 2,
-                height: `${h}px`,
-                background: passed ? tokens.cyan : "#1a1827",
-                borderRadius: 1,
-                opacity: passed ? 0.85 : 1,
-                flex: 1,
-              }}
-            />
-          );
-        })}
-        <div
-          style={{
-            position: "absolute",
-            top: -3,
-            bottom: -3,
-            left: `${progress}%`,
-            width: 2,
-            background: tokens.text,
-            boxShadow: `0 0 10px ${tokens.cyan}`,
-            borderRadius: 1,
-          }}
-        />
-      </div>
-    </div>
-  );
-}
-
 export function TocPane({
   meeting,
   activeSection,
@@ -308,10 +209,6 @@ export function TocPane({
           unresolvedCount={meeting.unresolved.length}
         />
       </div>
-
-      <div style={{ flex: 1 }} />
-
-      <AudioPlayer duration={meeting.duration} />
     </aside>
   );
 }

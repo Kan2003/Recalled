@@ -10,6 +10,7 @@ import { SpeakerStack } from "./SpeakerStack";
 import { AskAIPanel } from "./AskAIPanel";
 import { ExportIcon, ShareIcon, CheckIcon } from "./Icons";
 import { useRouter } from "next/navigation";
+import { downloadMeetingMarkdown } from "@/lib/exportMeeting";
 
 function Card({
   eyebrow,
@@ -195,6 +196,20 @@ export function MeetingDetailPane({
     }
   };
 
+  const exportMeeting = () => {
+    if (!raw) return;
+    downloadMeetingMarkdown({
+      id: raw.id,
+      title: raw.title,
+      date: new Date(raw.createdAt).toLocaleString([], { dateStyle: "long", timeStyle: "short" }),
+      summary: raw.summary ?? "",
+      decisions: decisions.map((d) => d.text),
+      actions,
+      topics: meeting?.tags ?? [],
+      transcript: raw.transcript,
+    });
+  };
+
   if (!meeting) {
     return (
       <section
@@ -262,6 +277,7 @@ export function MeetingDetailPane({
             </span>
             <span style={{ flex: 1 }} />
             <button
+              onClick={exportMeeting}
               style={{
                 background: "transparent",
                 color: tokens.textDim,

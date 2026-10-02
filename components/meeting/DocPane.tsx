@@ -5,6 +5,7 @@
 
 import { tokens } from "../landing/tokens";
 import { type MeetingDetail, type MeetingAction, type TranscriptTurn } from "./data";
+import { downloadMeetingMarkdown } from "@/lib/exportMeeting";
 
 // ── Primitives ────────────────────────────────────────────────────────────
 function Tag({ children }: { children: React.ReactNode }) {
@@ -333,6 +334,18 @@ export function DocPane({
   const openCount = actions.filter((a) => !a.done).length;
   const [firstSentence, ...rest] = meeting.tldr.split(".");
 
+  const exportMeeting = () =>
+    downloadMeetingMarkdown({
+      id: meeting.id,
+      title: meeting.title,
+      date: `${meeting.date}, ${meeting.time}`,
+      summary: meeting.tldr,
+      decisions: meeting.decisions.map((d) => d.text),
+      actions,
+      topics: meeting.topics,
+      transcript: meeting.transcript.map((t) => t.text).join("\n\n"),
+    });
+
   return (
     <main
       style={{
@@ -384,6 +397,7 @@ export function DocPane({
           </span>
           <span style={{ flex: 1 }} />
           <button
+            onClick={exportMeeting}
             style={{
               background: "transparent",
               color: tokens.textDim,

@@ -90,7 +90,10 @@ function MeetingRow({
         color: "inherit",
         font: "inherit",
       }}
-      onMouseEnter={(e) => { if (!selected) e.currentTarget.style.background = "rgba(255,255,255,0.025)"; }}
+      onMouseEnter={(e) => {
+        router.prefetch(`/dashboard/${m.id}`);
+        if (!selected) e.currentTarget.style.background = "rgba(255,255,255,0.025)";
+      }}
       onMouseLeave={(e) => { if (!selected) e.currentTarget.style.background = "transparent"; }}
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 4 }}>

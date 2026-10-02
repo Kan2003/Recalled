@@ -391,12 +391,6 @@ export function MetadataForm({
         label="Detect speakers"
         sub="Auto-label who said what. Falls back to Speaker 1/2/3."
       />
-      <OptionRow
-        value={state.reminders}
-        onChange={(v) => set({ reminders: v })}
-        label="Email reminders for open actions"
-        sub="Daily nudge until each action is checked off."
-      />
 
 
 
