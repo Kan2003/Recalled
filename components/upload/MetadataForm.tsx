@@ -286,6 +286,7 @@ function LanguagePicker({ value, onChange }: { value: string; onChange: (v: stri
     <div
       style={{
         display: "inline-flex",
+        flexWrap: "wrap",
         padding: 3,
         background: tokens.surface2,
         border: `1px solid ${tokens.border}`,
@@ -337,7 +338,7 @@ export function MetadataForm({
 }) {
   const canSubmit = hasSource && !busy;
   return (
-    <Card padding={26}>
+    <Card padding="clamp(16px, 4vw, 26px)">
       <Eyebrow>// MEETING DETAILS · OPTIONAL</Eyebrow>
 
       <Field label="TITLE" hint="auto-generated if empty">

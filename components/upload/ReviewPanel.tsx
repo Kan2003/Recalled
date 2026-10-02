@@ -71,6 +71,7 @@ function inputStyle(): React.CSSProperties {
     fontSize: 12.5,
     outline: "none",
     width: "100%",
+    minWidth: 0,
   };
 }
 
@@ -132,7 +133,7 @@ export function ReviewPanel({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {includeSummary && (
-        <Card padding={22}>
+        <Card padding="clamp(14px, 4vw, 22px)">
           <Eyebrow>// TL;DR — {title || "Untitled meeting"}</Eyebrow>
           <textarea
             value={analysis.summary}
@@ -156,7 +157,7 @@ export function ReviewPanel({
       )}
 
       {includeSummary && (
-        <Card padding={22}>
+        <Card padding="clamp(14px, 4vw, 22px)">
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
             <Eyebrow accent={tokens.cyan}>// KEY DECISIONS</Eyebrow>
             <button
@@ -193,7 +194,7 @@ export function ReviewPanel({
       )}
 
       {includeActions && (
-        <Card padding={22}>
+        <Card padding="clamp(14px, 4vw, 22px)">
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
             <Eyebrow accent={tokens.violet}>// ACTION ITEMS</Eyebrow>
             <button
@@ -219,7 +220,7 @@ export function ReviewPanel({
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {analysis.actionItems.map((a, i) => (
-                <div key={i} style={{ display: "grid", gridTemplateColumns: "2.2fr 1fr 1fr auto", gap: 8, alignItems: "center" }}>
+                <div key={i} className="review-action-row">
                   <input
                     value={a.task}
                     onChange={(e) => updateAction(i, { task: e.target.value })}
@@ -247,7 +248,7 @@ export function ReviewPanel({
       )}
 
       {includeSummary && (
-        <Card padding={22}>
+        <Card padding="clamp(14px, 4vw, 22px)">
           <SectionLabel>// TOPICS</SectionLabel>
           <div
             style={{

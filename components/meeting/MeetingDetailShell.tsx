@@ -1,7 +1,8 @@
 "use client";
 
 // components/meeting/MeetingDetailShell.tsx
-// Composes the three columns and wires cross-pane scroll/jump.
+// Composes the three columns and wires cross-pane scroll/jump. Responsive
+// layout (column hiding/stacking) lives in globals.css under .meeting-*.
 
 import { useState, useEffect, useRef } from "react";
 import { tokens } from "../landing/tokens";
@@ -9,8 +10,13 @@ import { type MeetingDetail } from "./data";
 import { TocPane } from "./TocPane";
 import { DocPane } from "./DocPane";
 import { RightRail } from "./RightRail";
+import { AskAIPanel } from "../dashboard/AskAIPanel";
+import { useMediaQuery } from "../dashboard/useIsMobile";
 
 const SECTION_IDS = ["tldr", "decisions", "actions", "unresolved", "topics", "transcript"];
+
+// Single-column breakpoint — keep in sync with the 899px rules in globals.css.
+const NARROW_QUERY = "(max-width: 899px)";
 
 export function MeetingDetailShell({ meeting }: { meeting: MeetingDetail }) {
   // Actions live at the top so the TOC count + the doc stay in sync.
@@ -20,6 +26,10 @@ export function MeetingDetailShell({ meeting }: { meeting: MeetingDetail }) {
   const [activeSection, setActiveSection] = useState<string>("tldr");
   const [activeTime, setActiveTime] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // In the single-column layout the right rail stacks below the whole doc,
+  // so Ask AI moves into the doc (above the transcript) to stay reachable.
+  const narrow = useMediaQuery(NARROW_QUERY);
 
   // Jump to a section from TOC clicks
   const jumpToSection = (id: string) => {
@@ -59,7 +69,7 @@ export function MeetingDetailShell({ meeting }: { meeting: MeetingDetail }) {
   }, []);
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: tokens.bg, color: tokens.text }}>
+    <div className="meeting-shell" style={{ display: "flex", minHeight: "100vh", background: tokens.bg, color: tokens.text }}>
       <TocPane
         meeting={meeting}
         activeSection={activeSection}
@@ -69,8 +79,10 @@ export function MeetingDetailShell({ meeting }: { meeting: MeetingDetail }) {
       />
       <div
         ref={scrollRef}
+        className="meeting-doc-scroll"
         style={{
           flex: 1,
+          minWidth: 0,
           display: "flex",
           justifyContent: "center",
           overflowY: "auto",
@@ -83,9 +95,10 @@ export function MeetingDetailShell({ meeting }: { meeting: MeetingDetail }) {
           setActions={setActions}
           activeTranscriptTime={activeTime}
           onTimeJump={jumpToTime}
+          askPanel={narrow ? <AskAIPanel meetingId={meeting.id} /> : undefined}
         />
       </div>
-      <RightRail meeting={meeting} onTimeJump={jumpToTime} />
+      <RightRail meeting={meeting} onTimeJump={jumpToTime} showAsk={!narrow} />
     </div>
   );
 }

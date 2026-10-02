@@ -127,6 +127,7 @@ export function TocPane({
 }) {
   return (
     <aside
+      className="meeting-toc"
       style={{
         width: 240,
         borderRight: `1px solid ${tokens.border}`,

@@ -31,7 +31,7 @@ export function Card({
 }: {
   children: ReactNode;
   accent?: string;
-  padding?: number;
+  padding?: number | string;
   style?: React.CSSProperties;
 }) {
   return (

@@ -140,13 +140,13 @@ export function UploadShell() {
         <UploadHeader step={step} />
 
         {phase === "review" && analysis ? (
-          <main style={{ maxWidth: 760, margin: "0 auto", padding: "36px 40px 60px" }}>
+          <main style={{ maxWidth: 760, margin: "0 auto", padding: "clamp(20px, 4vw, 36px) clamp(16px, 4vw, 40px) 60px" }}>
             <div style={{ marginBottom: 22 }}>
               <Eyebrow accent={tokens.cyan}>// STEP 3 · REVIEW BEFORE SAVING</Eyebrow>
               <h1
                 style={{
                   fontFamily: "var(--font-geist-sans)",
-                  fontSize: 30,
+                  fontSize: "clamp(24px, 6vw, 30px)",
                   fontWeight: 500,
                   letterSpacing: "-0.025em",
                   color: tokens.text,
@@ -184,13 +184,11 @@ export function UploadShell() {
           </main>
         ) : (
         <main
+          className="upload-grid"
           style={{
             maxWidth: 1280,
             margin: "0 auto",
-            padding: "36px 40px 60px",
-            display: "grid",
-            gridTemplateColumns: "1.3fr 1fr",
-            gap: 28,
+            padding: "clamp(20px, 4vw, 36px) clamp(16px, 4vw, 40px) 60px",
           }}
         >
           {/* Left — source picker + active pane */}
@@ -200,7 +198,7 @@ export function UploadShell() {
               <h1
                 style={{
                   fontFamily: "var(--font-geist-sans)",
-                  fontSize: 30,
+                  fontSize: "clamp(24px, 6vw, 30px)",
                   fontWeight: 500,
                   letterSpacing: "-0.025em",
                   color: tokens.text,
@@ -224,7 +222,7 @@ export function UploadShell() {
               </p>
             </div>
 
-            <Card padding={22}>
+            <Card padding="clamp(14px, 4vw, 22px)">
               <SourceTabs active={activeSource} onChange={setActiveSource} />
               {activeSource === "audio"  && <AudioSource file={file} onFileChange={setFile} />}
               {activeSource === "paste"  && <PasteSource value={pasteText} onChange={setPaste} />}

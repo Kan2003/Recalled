@@ -148,6 +148,75 @@ body {
   margin-bottom: 48px;
 }
 
+/* Meeting detail page (/dashboard/[meetingId]). Three columns on wide screens;
+   the left TOC rail drops below 1200px; below 900px everything stacks into one
+   column. Panes set layout inline, hence the !important overrides. Keep 899px
+   in sync with NARROW_QUERY in components/meeting/MeetingDetailShell.tsx. */
+.meeting-compact-only { display: none; }
+
+@media (max-width: 1199px) {
+  .meeting-toc { display: none !important; }
+  .meeting-compact-only { display: flex; }
+}
+
+@media (max-width: 899px) {
+  .meeting-shell { flex-direction: column; }
+  .meeting-doc-scroll { max-height: none !important; overflow: visible !important; }
+  .meeting-doc { min-height: 0 !important; }
+  .meeting-rail {
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    overflow: visible !important;
+    padding: 20px 16px 32px !important;
+    border-left: none !important;
+    border-top: 1px solid rgba(255,255,255,0.14);
+  }
+  .meeting-rail-resize { display: none; }
+}
+
+/* Upload page (/upload). Two columns (source | details) stack below 960px,
+   where the header's draft button also hides; decorative/secondary header
+   bits hide below 720px; source tabs go icon-over-label below 480px. */
+.upload-grid {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 28px;
+}
+.upload-grid > * { min-width: 0; }
+@media (max-width: 960px) {
+  .upload-grid { grid-template-columns: 1fr; }
+  .upload-hide-md { display: none !important; }
+}
+
+@media (max-width: 720px) {
+  .upload-hide-sm { display: none !important; }
+}
+
+@media (max-width: 480px) {
+  .upload-tab {
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px !important;
+    padding: 8px 4px !important;
+    text-align: center !important;
+    font-size: 11.5px !important;
+  }
+}
+
+/* Review step action-item rows: task | owner | due | ×, and on phones the
+   task takes its own line above owner | due | ×. */
+.review-action-row {
+  display: grid;
+  grid-template-columns: 2.2fr 1fr 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+@media (max-width: 600px) {
+  .review-action-row { grid-template-columns: 1fr 1fr auto; }
+  .review-action-row > :first-child { grid-column: 1 / -1; }
+}
+
 /* Landing animations — referenced from inline styles in TranscriptCard / AskAICard. */
 @keyframes recalled-pulse {
   0%, 100% { opacity: 1; }

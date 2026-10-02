@@ -46,8 +46,10 @@ function SourceTab({
   return (
     <button
       onClick={onClick}
+      className="upload-tab"
       style={{
         flex: 1,
+        minWidth: 0,
         display: "flex",
         alignItems: "center",
         gap: 8,
@@ -132,7 +134,7 @@ export function AudioSource({
           style={{
             border: `2px dashed ${dragging ? tokens.cyan : tokens.borderStrong}`,
             borderRadius: 14,
-            padding: "52px 24px",
+            padding: "clamp(32px, 8vw, 52px) clamp(14px, 4vw, 24px)",
             background: dragging
               ? `linear-gradient(135deg, ${tokens.violet}14, ${tokens.cyan}14)`
               : `linear-gradient(180deg, ${tokens.surface} 0%, ${tokens.bg} 100%)`,
@@ -299,7 +301,7 @@ export function AudioSource({
               <span style={{ color: "#34d399", marginLeft: 4 }}>READY TO ANALYZE</span>
             </div>
           </div>
-          <div style={{ display: "flex", alignItems: "end", gap: 2, height: 26 }}>
+          <div className="upload-hide-sm" style={{ display: "flex", alignItems: "end", gap: 2, height: 26 }}>
             {Array.from({ length: 36 }).map((_, i) => {
               const h = 4 + Math.abs(Math.sin(i * 0.55) + Math.sin(i * 0.27)) * 10;
               return (
@@ -369,7 +371,9 @@ export function PasteSource({ value, onChange }: { value: string; onChange: (v: 
       <div
         style={{
           display: "flex",
+          flexWrap: "wrap",
           justifyContent: "space-between",
+          gap: "6px 12px",
           marginTop: 12,
           fontFamily: "var(--font-geist-mono)",
           fontSize: 11,
@@ -416,6 +420,7 @@ export function URLSource({ value, onChange }: { value: string; onChange: (v: st
           placeholder="https://meet.google.com/… or paste a Loom / Zoom link"
           style={{
             flex: 1,
+            minWidth: 0,
             background: "transparent",
             border: "none",
             outline: "none",

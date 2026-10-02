@@ -11,6 +11,7 @@ import { Rail, type RailItem } from "./Rail";
 import { MeetingListPane } from "./MeetingListPane";
 import { MeetingDetailPane } from "./MeetingDetailPane";
 import { useSession } from "next-auth/react";
+import { useIsMobile } from "./useIsMobile";
 
 export function DashboardShell() {
   const session = useSession();
@@ -18,6 +19,18 @@ export function DashboardShell() {
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
   const [nav, setNav] = useState<RailItem>("home");
   const router = useRouter();
+
+  // Phones have no room for list + detail side by side, so show one at a
+  // time: tapping a meeting opens its detail, Back returns to the list.
+  const isMobile = useIsMobile();
+  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
+  const showList = !isMobile || !mobileDetailOpen;
+  const showDetail = !isMobile || mobileDetailOpen;
+
+  const selectMeeting = (id: string) => {
+    setSelectedId(id);
+    setMobileDetailOpen(true);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -70,16 +83,26 @@ export function DashboardShell() {
         </div>
       ) : (
         <>
-          <MeetingListPane meetings={summaries} selectedId={selectedId ?? ""} onSelect={setSelectedId} />
-          <MeetingDetailPane
-            meeting={selectedRaw ? toMeetingSummary(selectedRaw) : undefined}
-            raw={selectedRaw}
-            onActionItemsChange={(updated) =>
-              setMeetings((prev) =>
-                prev?.map((m) => (m.id === selectedRaw?.id ? { ...m, actionItems: updated } : m)) ?? prev,
-              )
-            }
-          />
+          {showList && (
+            <MeetingListPane
+              meetings={summaries}
+              selectedId={selectedId ?? ""}
+              onSelect={selectMeeting}
+              fullWidth={isMobile}
+            />
+          )}
+          {showDetail && (
+            <MeetingDetailPane
+              meeting={selectedRaw ? toMeetingSummary(selectedRaw) : undefined}
+              raw={selectedRaw}
+              onBack={isMobile ? () => setMobileDetailOpen(false) : undefined}
+              onActionItemsChange={(updated) =>
+                setMeetings((prev) =>
+                  prev?.map((m) => (m.id === selectedRaw?.id ? { ...m, actionItems: updated } : m)) ?? prev,
+                )
+              }
+            />
+          )}
         </>
       )}
     </div>

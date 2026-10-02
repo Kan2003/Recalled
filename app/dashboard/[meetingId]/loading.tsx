@@ -21,8 +21,8 @@ function Bar({ w, h = 12, mb = 10 }: { w: number | string; h?: number; mb?: numb
 
 export default function Loading() {
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: tokens.bg }}>
-      <aside style={{ width: 240, flexShrink: 0, borderRight: `1px solid ${tokens.border}`, padding: "24px 18px" }}>
+    <div className="meeting-shell" style={{ display: "flex", minHeight: "100vh", background: tokens.bg }}>
+      <aside className="meeting-toc" style={{ width: 240, flexShrink: 0, borderRight: `1px solid ${tokens.border}`, padding: "24px 18px" }}>
         <Bar w={90} mb={32} />
         <Bar w={60} h={10} />
         <Bar w="85%" />
@@ -33,8 +33,8 @@ export default function Loading() {
         ))}
       </aside>
 
-      <main style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-        <div style={{ flex: 1, maxWidth: 760, padding: "32px 56px" }}>
+      <main style={{ flex: 1, minWidth: 0, display: "flex", justifyContent: "center" }}>
+        <div style={{ flex: 1, maxWidth: 760, padding: "clamp(16px, 4vw, 32px) clamp(16px, 5vw, 56px)" }}>
           <Bar w={140} h={10} mb={20} />
           <Bar w="70%" h={36} mb={32} />
           <Bar w="100%" h={14} />
@@ -47,7 +47,7 @@ export default function Loading() {
         </div>
       </main>
 
-      <aside style={{ width: 360, flexShrink: 0, borderLeft: `1px solid ${tokens.border}`, padding: "24px 20px" }}>
+      <aside className="meeting-rail" style={{ width: 360, flexShrink: 0, borderLeft: `1px solid ${tokens.border}`, padding: "24px 20px" }}>
         <Bar w={110} h={10} mb={16} />
         <Bar w="100%" h={120} mb={24} />
         <Bar w="100%" h={40} />
