@@ -90,7 +90,10 @@ function MeetingRow({
         color: "inherit",
         font: "inherit",
       }}
-      onMouseEnter={(e) => { if (!selected) e.currentTarget.style.background = "rgba(255,255,255,0.025)"; }}
+      onMouseEnter={(e) => {
+        router.prefetch(`/dashboard/${m.id}`);
+        if (!selected) e.currentTarget.style.background = "rgba(255,255,255,0.025)";
+      }}
       onMouseLeave={(e) => { if (!selected) e.currentTarget.style.background = "transparent"; }}
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 4 }}>
@@ -164,10 +167,13 @@ export function MeetingListPane({
   meetings,
   selectedId,
   onSelect,
+  fullWidth = false,
 }: {
   meetings: Meeting[];
   selectedId: string;
   onSelect: (id: string) => void;
+  /** Phone layout: fill the available width, no resize/collapse. */
+  fullWidth?: boolean;
 }) {
   const [filter, setFilter] = useState<FilterKey>("all");
   const [query, setQuery] = useState("");
@@ -243,7 +249,7 @@ export function MeetingListPane({
     </div>
   );
 
-  if (collapsed) {
+  if (collapsed && !fullWidth) {
     return (
       <section
         style={{
@@ -297,15 +303,14 @@ export function MeetingListPane({
     <section
       style={{
         position: "relative",
-        width,
+        ...(fullWidth ? { flex: 1, minWidth: 0 } : { width, flexShrink: 0 }),
         borderRight: `1px solid ${tokens.border}`,
         background: tokens.surface,
         display: "flex",
         flexDirection: "column",
-        flexShrink: 0,
       }}
     >
-      {resizeHandle}
+      {!fullWidth && resizeHandle}
       <div style={{ padding: "18px 18px 14px", borderBottom: `1px solid ${tokens.border}` }}>
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 14 }}>
           <h1 style={{ fontFamily: "var(--font-geist-sans)", fontSize: 18, fontWeight: 600, letterSpacing: "-0.02em", color: tokens.text, margin: 0 }}>

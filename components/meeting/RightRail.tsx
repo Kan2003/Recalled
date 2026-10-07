@@ -206,7 +206,15 @@ function RelatedMeetings({ related }: { related: MeetingDetail["related"] }) {
   );
 }
 
-export function RightRail({ meeting }: { meeting: MeetingDetail; onTimeJump: (t: string) => void }) {
+export function RightRail({
+  meeting,
+  showAsk = true,
+}: {
+  meeting: MeetingDetail;
+  onTimeJump: (t: string) => void;
+  /** False in the single-column layout, where Ask AI renders inside the doc. */
+  showAsk?: boolean;
+}) {
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const [resizing, setResizing] = useState(false);
   const dragState = useRef<{ startX: number; startWidth: number } | null>(null);
@@ -235,6 +243,7 @@ export function RightRail({ meeting }: { meeting: MeetingDetail; onTimeJump: (t:
 
   return (
     <aside
+      className="meeting-rail"
       style={{
         position: "sticky",
         width,
@@ -250,6 +259,7 @@ export function RightRail({ meeting }: { meeting: MeetingDetail; onTimeJump: (t:
       }}
     >
       <div
+        className="meeting-rail-resize"
         onPointerDown={startResize}
         onDoubleClick={() => setWidth(DEFAULT_WIDTH)}
         title="Drag to resize · double-click to reset"
@@ -273,7 +283,7 @@ export function RightRail({ meeting }: { meeting: MeetingDetail; onTimeJump: (t:
           }}
         />
       </div>
-      <AskAIPanel meetingId={meeting.id} />
+      {showAsk && <AskAIPanel meetingId={meeting.id} />}
       <div style={{ overflow: "auto", display: "flex", flexDirection: "column", gap: 16, flexShrink: 0 }}>
         <ShareStatus />
         <RelatedMeetings related={meeting.related} />

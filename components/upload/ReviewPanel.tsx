@@ -2,8 +2,8 @@
 
 // components/upload/ReviewPanel.tsx
 // STEP 3 — shows the AI analysis before it's saved. Everything here is
-// editable: the user can fix the summary, drop a bad decision, or correct
-// an action item's owner/due date before it's persisted to the database.
+// editable: the user can fix the title or summary, drop a bad decision, or
+// correct an action item's owner/due date before it's persisted to the database.
 
 import { useState } from "react";
 import { tokens } from "../landing/tokens";
@@ -12,6 +12,11 @@ import { Card, Eyebrow } from "./primitives";
 export type ReviewActionItem = { task: string; owner: string | null; dueDate: string | null };
 
 export type AnalysisResult = {
+  // `title` is what gets saved — the user's own title if they typed one,
+  // otherwise the AI's. `suggestedTitle` is the AI's pick, kept so the user
+  // can switch back to it.
+  title: string;
+  suggestedTitle: string;
   summary: string;
   decisions: string[];
   topics: string[];
@@ -71,11 +76,11 @@ function inputStyle(): React.CSSProperties {
     fontSize: 12.5,
     outline: "none",
     width: "100%",
+    minWidth: 0,
   };
 }
 
 export function ReviewPanel({
-  title,
   analysis,
   onChange,
   includeSummary,
@@ -85,7 +90,6 @@ export function ReviewPanel({
   onBack,
   onConfirm,
 }: {
-  title: string;
   analysis: AnalysisResult;
   onChange: (next: AnalysisResult) => void;
   includeSummary: boolean;
@@ -96,6 +100,10 @@ export function ReviewPanel({
   onConfirm: () => void;
 }) {
   const [topicDraft, setTopicDraft] = useState("");
+
+  const hasTitle = analysis.title.trim().length > 0;
+  const usingSuggestion = !!analysis.suggestedTitle && analysis.title === analysis.suggestedTitle;
+  const canSave = hasTitle && !busy;
 
   const updateDecision = (i: number, text: string) => {
     onChange({ ...analysis, decisions: analysis.decisions.map((d, j) => (j === i ? text : d)) });
@@ -131,9 +139,55 @@ export function ReviewPanel({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <Card padding="clamp(14px, 4vw, 22px)">
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
+          <Eyebrow>{"// MEETING TITLE"}</Eyebrow>
+          {usingSuggestion && (
+            <span style={{ fontFamily: "var(--font-geist-mono)", fontSize: 10, color: tokens.cyan, letterSpacing: "0.06em" }}>
+              AI SUGGESTED
+            </span>
+          )}
+        </div>
+        <input
+          value={analysis.title}
+          onChange={(e) => onChange({ ...analysis, title: e.target.value })}
+          placeholder="Give this meeting a title"
+          style={{
+            ...inputStyle(),
+            fontSize: 15,
+            padding: "10px 12px",
+            borderColor: hasTitle ? tokens.border : "#f8717166",
+          }}
+        />
+        {!hasTitle && (
+          <div style={{ marginTop: 8, fontFamily: "var(--font-geist-mono)", fontSize: 11, color: "#fca5a5" }}>
+            A title is required before saving.
+          </div>
+        )}
+        {analysis.suggestedTitle && !usingSuggestion && (
+          <button
+            onClick={() => onChange({ ...analysis, title: analysis.suggestedTitle })}
+            style={{
+              marginTop: 8,
+              background: "transparent",
+              border: `1px solid ${tokens.border}`,
+              borderRadius: 6,
+              padding: "5px 9px",
+              fontFamily: "var(--font-geist-sans)",
+              fontSize: 12,
+              color: tokens.textDim,
+              cursor: "pointer",
+              textAlign: "left",
+            }}
+          >
+            <span style={{ color: tokens.cyan }}>Use AI suggestion:</span> {analysis.suggestedTitle}
+          </button>
+        )}
+      </Card>
+
       {includeSummary && (
-        <Card padding={22}>
-          <Eyebrow>// TL;DR — {title || "Untitled meeting"}</Eyebrow>
+        <Card padding="clamp(14px, 4vw, 22px)">
+          <Eyebrow>// TL;DR</Eyebrow>
           <textarea
             value={analysis.summary}
             onChange={(e) => onChange({ ...analysis, summary: e.target.value })}
@@ -156,7 +210,7 @@ export function ReviewPanel({
       )}
 
       {includeSummary && (
-        <Card padding={22}>
+        <Card padding="clamp(14px, 4vw, 22px)">
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
             <Eyebrow accent={tokens.cyan}>// KEY DECISIONS</Eyebrow>
             <button
@@ -193,7 +247,7 @@ export function ReviewPanel({
       )}
 
       {includeActions && (
-        <Card padding={22}>
+        <Card padding="clamp(14px, 4vw, 22px)">
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
             <Eyebrow accent={tokens.violet}>// ACTION ITEMS</Eyebrow>
             <button
@@ -219,7 +273,7 @@ export function ReviewPanel({
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {analysis.actionItems.map((a, i) => (
-                <div key={i} style={{ display: "grid", gridTemplateColumns: "2.2fr 1fr 1fr auto", gap: 8, alignItems: "center" }}>
+                <div key={i} className="review-action-row">
                   <input
                     value={a.task}
                     onChange={(e) => updateAction(i, { task: e.target.value })}
@@ -247,7 +301,7 @@ export function ReviewPanel({
       )}
 
       {includeSummary && (
-        <Card padding={22}>
+        <Card padding="clamp(14px, 4vw, 22px)">
           <SectionLabel>// TOPICS</SectionLabel>
           <div
             style={{
@@ -339,19 +393,19 @@ export function ReviewPanel({
         </button>
         <button
           onClick={onConfirm}
-          disabled={busy}
+          disabled={!canSave}
           style={{
             flex: 1,
-            background: busy ? tokens.surface2 : tokens.text,
-            color: busy ? tokens.textMute : tokens.bg,
-            border: busy ? `1px solid ${tokens.border}` : "none",
+            background: canSave ? tokens.text : tokens.surface2,
+            color: canSave ? tokens.bg : tokens.textMute,
+            border: canSave ? "none" : `1px solid ${tokens.border}`,
             padding: "11px 18px",
             borderRadius: 8,
             fontFamily: "var(--font-geist-sans)",
             fontSize: 14,
             fontWeight: 500,
-            cursor: busy ? "not-allowed" : "pointer",
-            boxShadow: busy ? "none" : `0 8px 20px ${tokens.cyan}25`,
+            cursor: canSave ? "pointer" : "not-allowed",
+            boxShadow: canSave ? `0 8px 20px ${tokens.cyan}25` : "none",
           }}
         >
           {busy ? "Saving…" : "Confirm & save meeting"}

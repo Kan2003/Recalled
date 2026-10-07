@@ -1,70 +1,53 @@
 "use client";
 
 // components/dashboard/AskAIPanel.tsx
-// Persistent chat-with-the-meeting widget. Manages its own state — input,
-// chat history, typewriter for the streamed answer. History is persisted
-// to localStorage per meeting so a reload doesn't lose the conversation.
+// Persistent chat-with-the-meeting widget. Manages its own state — input
+// and chat history. History is persisted to localStorage per meeting so a
+// reload doesn't lose the conversation.
 
 import { useState, useEffect, useRef } from "react";
 import { tokens } from "../landing/tokens";
 import { ASK_SUGGESTIONS } from "./data";
+import { askStorageKey as storageKey, type AskChatMessage as ChatMessage } from "@/lib/exportMeeting";
 
-const INITIAL_Q = "What did we decide about the launch date?";
-const INITIAL_A = "March 14. Devon is owning the cutover, contingent on QA wrapping by the 10th.";
-
-type ChatMessage = { q: string; a: string; error?: boolean };
-
-function storageKey(meetingId: string) {
-  return `recalled:ask:${meetingId}`;
-}
+// The old UI mockup typed out this fake exchange on mount and it got
+// persisted into every meeting's history. Strip it from saved history.
+const LEGACY_DEMO_Q = "What did we decide about the launch date?";
+const LEGACY_DEMO_A = "March 14. Devon is owning the cutover, contingent on QA wrapping by the 10th.";
 
 export function AskAIPanel({ meetingId }: { meetingId: string }) {
   const [value, setValue] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [typing, setTyping] = useState(false);
   const [loading, setLoading] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
-  // Load saved history on mount; if none, play the canned intro exchange.
+  // Load saved history on mount.
   useEffect(() => {
     const saved = localStorage.getItem(storageKey(meetingId));
-    if (saved) {
-      setMessages(JSON.parse(saved));
-      return;
-    }
-
-    setMessages([{ q: INITIAL_Q, a: "" }]);
-    setTyping(true);
-    let i = 0;
-    const id = setInterval(() => {
-      i += 1;
-      setMessages([{ q: INITIAL_Q, a: INITIAL_A.slice(0, i) }]);
-      if (i >= INITIAL_A.length) {
-        clearInterval(id);
-        setTyping(false);
-      }
-    }, 18);
-    return () => clearInterval(id);
+    const history: ChatMessage[] = saved ? JSON.parse(saved) : [];
+    setMessages(history.filter((m) => !(m.q === LEGACY_DEMO_Q && LEGACY_DEMO_A.startsWith(m.a))));
   }, [meetingId]);
 
   // Persist history whenever it changes.
   useEffect(() => {
-    if (messages.length === 0) return;
+    if (messages.length === 0) {
+      localStorage.removeItem(storageKey(meetingId));
+      return;
+    }
     localStorage.setItem(storageKey(meetingId), JSON.stringify(messages));
   }, [messages, meetingId]);
 
-  // Keep the latest exchange in view as it streams in.
+  // Keep the latest exchange in view.
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }, [messages, loading, typing]);
+  }, [messages, loading]);
 
-  const submit = async () => {
-    if (!value.trim()) return;
-    const question = value;
+  const submit = async (text: string = value) => {
+    const question = text.trim();
+    if (!question || loading) return;
     setMessages((prev) => [...prev, { q: question, a: "" }]);
-    setTyping(false);
     setLoading(true);
-    setValue("");
+    if (text === value) setValue("");
 
     try {
       const res = await fetch(`/api/meetings/${meetingId}/ask`, {
@@ -196,9 +179,6 @@ export function AskAIPanel({ meetingId }: { meetingId: string }) {
                     ) : (
                       m.a
                     )}
-                    {isLast && typing && (
-                      <span style={{ color: tokens.cyan, marginLeft: 2, animation: "recalled-blink 0.9s steps(2,end) infinite" }}>▌</span>
-                    )}
                   </div>
                 </div>
               );
@@ -236,7 +216,7 @@ export function AskAIPanel({ meetingId }: { meetingId: string }) {
             }}
           />
           <button
-            onClick={submit}
+            onClick={() => submit()}
             style={{
               background: tokens.text,
               color: tokens.bg,
@@ -258,7 +238,8 @@ export function AskAIPanel({ meetingId }: { meetingId: string }) {
           {ASK_SUGGESTIONS.map((s) => (
             <button
               key={s}
-              onClick={() => setValue(s)}
+              onClick={() => submit(s)}
+              disabled={loading}
               style={{
                 background: "transparent",
                 border: `1px solid ${tokens.border}`,
@@ -267,7 +248,8 @@ export function AskAIPanel({ meetingId }: { meetingId: string }) {
                 fontFamily: "var(--font-geist-sans)",
                 fontSize: 11.5,
                 color: tokens.textDim,
-                cursor: "pointer",
+                cursor: loading ? "default" : "pointer",
+                opacity: loading ? 0.5 : 1,
                 transition: "all 0.15s",
               }}
               onMouseEnter={(e) => {

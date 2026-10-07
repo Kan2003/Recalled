@@ -286,6 +286,7 @@ function LanguagePicker({ value, onChange }: { value: string; onChange: (v: stri
     <div
       style={{
         display: "inline-flex",
+        flexWrap: "wrap",
         padding: 3,
         background: tokens.surface2,
         border: `1px solid ${tokens.border}`,
@@ -337,10 +338,10 @@ export function MetadataForm({
 }) {
   const canSubmit = hasSource && !busy;
   return (
-    <Card padding={26}>
+    <Card padding="clamp(16px, 4vw, 26px)">
       <Eyebrow>// MEETING DETAILS · OPTIONAL</Eyebrow>
 
-      <Field label="TITLE" hint="auto-generated if empty">
+      <Field label="TITLE" hint="AI suggests one if empty">
         <TextInput value={state.title} onChange={(v) => set({ title: v })} placeholder="Q1 launch sync" />
       </Field>
 
@@ -390,12 +391,6 @@ export function MetadataForm({
         onChange={(v) => set({ speakerDetect: v })}
         label="Detect speakers"
         sub="Auto-label who said what. Falls back to Speaker 1/2/3."
-      />
-      <OptionRow
-        value={state.reminders}
-        onChange={(v) => set({ reminders: v })}
-        label="Email reminders for open actions"
-        sub="Daily nudge until each action is checked off."
       />
 
 

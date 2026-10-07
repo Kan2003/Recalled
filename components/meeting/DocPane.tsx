@@ -3,8 +3,12 @@
 // components/meeting/DocPane.tsx
 // Center column — the meeting document itself.
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { tokens } from "../landing/tokens";
 import { type MeetingDetail, type MeetingAction, type TranscriptTurn } from "./data";
+import { downloadMeetingMarkdown } from "@/lib/exportMeeting";
+import { DeleteMeetingButton } from "../dashboard/DeleteMeetingButton";
 
 // ── Primitives ────────────────────────────────────────────────────────────
 function Tag({ children }: { children: React.ReactNode }) {
@@ -323,22 +327,40 @@ export function DocPane({
   setActions,
   activeTranscriptTime,
   onTimeJump,
+  askPanel,
 }: {
   meeting: MeetingDetail;
   actions: MeetingAction[];
   setActions: React.Dispatch<React.SetStateAction<MeetingAction[]>>;
   activeTranscriptTime: string | null;
   onTimeJump: (t: string) => void;
+  /** Single-column layout only: Ask AI, rendered above the transcript. */
+  askPanel?: React.ReactNode;
 }) {
+  const router = useRouter();
   const openCount = actions.filter((a) => !a.done).length;
   const [firstSentence, ...rest] = meeting.tldr.split(".");
 
+  const exportMeeting = () =>
+    downloadMeetingMarkdown({
+      id: meeting.id,
+      title: meeting.title,
+      date: `${meeting.date}, ${meeting.time}`,
+      summary: meeting.tldr,
+      decisions: meeting.decisions.map((d) => d.text),
+      actions,
+      topics: meeting.topics,
+      transcript: meeting.transcript.map((t) => t.text).join("\n\n"),
+    });
+
   return (
     <main
+      className="meeting-doc"
       style={{
         flex: 1,
+        minWidth: 0,
         maxWidth: 760,
-        padding: "32px 56px 80px",
+        padding: "clamp(16px, 4vw, 32px) clamp(16px, 5vw, 56px) clamp(40px, 8vw, 80px)",
         minHeight: "100vh",
         position: "relative",
       }}
@@ -353,8 +375,36 @@ export function DocPane({
       />
 
       <div style={{ position: "relative" }}>
+        {/* Back link + meta — stands in for the TOC rail when it's hidden (<1200px) */}
+        <div
+          className="meeting-compact-only"
+          style={{
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+            flexWrap: "wrap",
+            marginBottom: 18,
+            fontFamily: "var(--font-geist-mono)",
+            fontSize: 11,
+            letterSpacing: "0.02em",
+          }}
+        >
+          <Link
+            href="/dashboard"
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, color: tokens.textDim, textDecoration: "none" }}
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+            All meetings
+          </Link>
+          <span style={{ color: tokens.textMute }}>
+            {meeting.date} · {meeting.time}
+          </span>
+        </div>
+
         {/* Status row + actions */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18, flexWrap: "wrap" }}>
           <span
             style={{
               display: "inline-flex",
@@ -384,6 +434,7 @@ export function DocPane({
           </span>
           <span style={{ flex: 1 }} />
           <button
+            onClick={exportMeeting}
             style={{
               background: "transparent",
               color: tokens.textDim,
@@ -428,13 +479,19 @@ export function DocPane({
             </svg>
             Share
           </button>
+          {/* replace, not push — Back shouldn't land on the deleted meeting's 404. */}
+          <DeleteMeetingButton
+            meetingId={meeting.id}
+            meetingTitle={meeting.title}
+            onDeleted={() => router.replace("/dashboard")}
+          />
         </div>
 
         {/* Title */}
         <h1
           style={{
             fontFamily: "var(--font-geist-sans)",
-            fontSize: 44,
+            fontSize: "clamp(28px, 6vw, 44px)",
             fontWeight: 500,
             letterSpacing: "-0.03em",
             color: tokens.text,
@@ -460,7 +517,7 @@ export function DocPane({
           <p
             style={{
               fontFamily: "Instrument Serif, serif",
-              fontSize: 30,
+              fontSize: "clamp(22px, 4.5vw, 30px)",
               fontWeight: 400,
               color: tokens.text,
               lineHeight: 1.3,
@@ -618,6 +675,8 @@ export function DocPane({
           )}
         </section>
 
+        {askPanel && <div style={{ marginTop: 40 }}>{askPanel}</div>}
+
         {/* ─ Transcript ─ */}
         <section id="transcript" style={{ scrollMarginTop: 24 }}>
           <H2 id="h-transcript" count={`${meeting.transcript.length} TURNS`}>TRANSCRIPT</H2>
@@ -625,6 +684,7 @@ export function DocPane({
             style={{
               display: "flex",
               alignItems: "center",
+              flexWrap: "wrap",
               gap: 10,
               marginBottom: 18,
               fontFamily: "var(--font-geist-mono)",

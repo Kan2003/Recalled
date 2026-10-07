@@ -21,15 +21,19 @@ export default async function MeetingDetailPage({
 }) {
   const { meetingId } = await params;
 
-  const session = await auth();
+  // Run both lookups in parallel — each is a DB round trip. Ownership is
+  // still checked below before anything is rendered.
+  const [session, meeting] = await Promise.all([
+    auth(),
+    prisma.meeting.findUnique({
+      where: { id: meetingId },
+      include: { actionItems: true },
+    }),
+  ]);
+
   if (!session?.user?.id) {
     redirect("/login");
   }
-
-  const meeting = await prisma.meeting.findUnique({
-    where: { id: meetingId },
-    include: { actionItems: true },
-  });
 
   if (!meeting || meeting.userId !== session.user.id) {
     notFound();

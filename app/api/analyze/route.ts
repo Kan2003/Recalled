@@ -16,7 +16,7 @@ export async function POST(req: Request) {
   const { transcript } = await req.json()
 
   const completion = await groq.chat.completions.create({
-    model: "llama-3.3-70b-versatile",
+    model: "openai/gpt-oss-120b",
     max_tokens: 4000,
     messages: [
       {
@@ -24,6 +24,7 @@ export async function POST(req: Request) {
         content: `Analyze this meeting transcript and return ONLY a JSON object with no extra text:
 
 {
+  "title": "short, specific meeting title (3-8 words, no quotes or trailing punctuation)",
   "summary": "2-3 sentence overview of the meeting",
   "decisions": ["decision 1", "decision 2"],
   "actionItems": [
@@ -40,7 +41,14 @@ Transcript:
 ${transcript}`,
       },
     ],
+  }).catch((err) => {
+    console.error("Groq analyze failed:", err)
+    return null
   })
+
+  if (!completion) {
+    return Response.json({ error: "AI analysis failed, please try again" }, { status: 502 })
+  }
 
   const raw = completion.choices[0]?.message?.content ?? "";
 

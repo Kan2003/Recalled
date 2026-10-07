@@ -8,8 +8,10 @@ import type { Meeting, ActionItem, RawMeeting, RawActionItem } from "./data";
 import { toActionItems, toDecisions } from "./data";
 import { SpeakerStack } from "./SpeakerStack";
 import { AskAIPanel } from "./AskAIPanel";
+import { DeleteMeetingButton } from "./DeleteMeetingButton";
 import { ExportIcon, ShareIcon, CheckIcon } from "./Icons";
 import { useRouter } from "next/navigation";
+import { downloadMeetingMarkdown } from "@/lib/exportMeeting";
 
 function Card({
   eyebrow,
@@ -165,12 +167,18 @@ export function MeetingDetailPane({
   meeting,
   raw,
   onActionItemsChange,
+  onDeleted,
+  onBack,
 }: {
   meeting: Meeting | undefined;
   raw: RawMeeting | undefined;
   onActionItemsChange?: (updated: RawActionItem[]) => void;
+  onDeleted?: (id: string) => void;
+  /** Phone layout: shows a back-to-list button and a single-column body. */
+  onBack?: () => void;
 }) {
   const router = useRouter();
+  const mobile = onBack !== undefined;
   const actions = raw ? toActionItems(raw) : [];
   const decisions = raw ? toDecisions(raw) : [];
   const openCount = actions.filter((a) => !a.done).length;
@@ -193,6 +201,20 @@ export function MeetingDetailPane({
     } catch {
       onActionItemsChange?.(raw.actionItems);
     }
+  };
+
+  const exportMeeting = () => {
+    if (!raw) return;
+    downloadMeetingMarkdown({
+      id: raw.id,
+      title: raw.title,
+      date: new Date(raw.createdAt).toLocaleString([], { dateStyle: "long", timeStyle: "short" }),
+      summary: raw.summary ?? "",
+      decisions: decisions.map((d) => d.text),
+      actions,
+      topics: meeting?.tags ?? [],
+      transcript: raw.transcript,
+    });
   };
 
   if (!meeting) {
@@ -224,9 +246,33 @@ export function MeetingDetailPane({
           pointerEvents: "none",
         }}
       />
-      <div style={{ position: "relative", padding: "24px 32px 40px" }}>
+      <div style={{ position: "relative", padding: mobile ? "16px 16px 32px" : "24px 32px 40px" }}>
         {/* Header */}
         <header style={{ marginBottom: 24 }}>
+          {onBack && (
+            <button
+              onClick={onBack}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                marginBottom: 14,
+                padding: 0,
+                background: "transparent",
+                border: "none",
+                color: tokens.textDim,
+                fontFamily: "var(--font-geist-mono)",
+                fontSize: 11,
+                letterSpacing: "0.02em",
+                cursor: "pointer",
+              }}
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+              </svg>
+              All meetings
+            </button>
+          )}
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
             {meeting.live && (
               <span
@@ -262,6 +308,7 @@ export function MeetingDetailPane({
             </span>
             <span style={{ flex: 1 }} />
             <button
+              onClick={exportMeeting}
               style={{
                 background: "transparent",
                 color: tokens.textDim,
@@ -298,11 +345,16 @@ export function MeetingDetailPane({
               <ShareIcon size={13} />
               Share
             </button>
+            <DeleteMeetingButton
+              meetingId={meeting.id}
+              meetingTitle={meeting.title}
+              onDeleted={() => onDeleted?.(meeting.id)}
+            />
           </div>
           <h2
             style={{
               fontFamily: "var(--font-geist-sans)",
-              fontSize: 36,
+              fontSize: mobile ? 26 : 36,
               fontWeight: 500,
               letterSpacing: "-0.025em",
               color: tokens.text,
@@ -352,7 +404,7 @@ export function MeetingDetailPane({
             </p>
           </Card>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "1.4fr 1fr", gap: 14 }}>
             <Card eyebrow="// ACTION ITEMS" sticky={`${openCount} OPEN · ${actions.length} TOTAL`}>
               {actions.length === 0 ? (
                 <div style={{ padding: "12px 0", color: tokens.textMute, fontFamily: "var(--font-geist-mono)", fontSize: 11 }}>
@@ -417,6 +469,8 @@ export function MeetingDetailPane({
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: 10,
               padding: "14px 18px",
               borderRadius: 10,
               border: `1px dashed ${tokens.border}`,

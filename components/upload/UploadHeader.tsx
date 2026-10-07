@@ -12,10 +12,12 @@ export function UploadHeader({ step = 1 }: { step?: 1 | 2 | 3 }) {
     <header
       style={{
         borderBottom: `1px solid ${tokens.border}`,
-        padding: "18px 40px",
+        padding: "16px clamp(16px, 4vw, 40px)",
         display: "flex",
+        flexWrap: "wrap",
         alignItems: "center",
         justifyContent: "space-between",
+        gap: "12px 20px",
         background: tokens.bg,
         position: "relative",
         zIndex: 2,
@@ -25,6 +27,7 @@ export function UploadHeader({ step = 1 }: { step?: 1 | 2 | 3 }) {
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
         <Logo />
         <span
+          className="upload-hide-sm"
           style={{
             fontFamily: "var(--font-geist-sans)",
             fontWeight: 600,
@@ -35,7 +38,7 @@ export function UploadHeader({ step = 1 }: { step?: 1 | 2 | 3 }) {
         >
           Recalled
         </span>
-        <span style={{ fontFamily: "var(--font-geist-mono)", fontSize: 11, color: tokens.textMute, marginLeft: 4 }}>/</span>
+        <span className="upload-hide-sm" style={{ fontFamily: "var(--font-geist-mono)", fontSize: 11, color: tokens.textMute, marginLeft: 4 }}>/</span>
         <Link
           href="/dashboard"
           style={{
@@ -47,8 +50,8 @@ export function UploadHeader({ step = 1 }: { step?: 1 | 2 | 3 }) {
         >
           ← Dashboard
         </Link>
-        <span style={{ fontFamily: "var(--font-geist-mono)", fontSize: 11, color: tokens.textMute }}>/</span>
-        <span style={{ fontFamily: "var(--font-geist-sans)", fontSize: 14, color: tokens.text, fontWeight: 500 }}>
+        <span className="upload-hide-sm" style={{ fontFamily: "var(--font-geist-mono)", fontSize: 11, color: tokens.textMute }}>/</span>
+        <span className="upload-hide-sm" style={{ fontFamily: "var(--font-geist-sans)", fontSize: 14, color: tokens.text, fontWeight: 500 }}>
           New meeting
         </span>
       </div>
@@ -98,7 +101,7 @@ export function UploadHeader({ step = 1 }: { step?: 1 | 2 | 3 }) {
         })}
       </div>
 
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+      <div className="upload-hide-md" style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <button
           style={{
             background: "transparent",
