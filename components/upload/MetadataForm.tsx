@@ -341,7 +341,7 @@ export function MetadataForm({
     <Card padding="clamp(16px, 4vw, 26px)">
       <Eyebrow>// MEETING DETAILS · OPTIONAL</Eyebrow>
 
-      <Field label="TITLE" hint="auto-generated if empty">
+      <Field label="TITLE" hint="AI suggests one if empty">
         <TextInput value={state.title} onChange={(v) => set({ title: v })} placeholder="Q1 launch sync" />
       </Field>
 

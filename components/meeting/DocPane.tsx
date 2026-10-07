@@ -4,9 +4,11 @@
 // Center column — the meeting document itself.
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { tokens } from "../landing/tokens";
 import { type MeetingDetail, type MeetingAction, type TranscriptTurn } from "./data";
 import { downloadMeetingMarkdown } from "@/lib/exportMeeting";
+import { DeleteMeetingButton } from "../dashboard/DeleteMeetingButton";
 
 // ── Primitives ────────────────────────────────────────────────────────────
 function Tag({ children }: { children: React.ReactNode }) {
@@ -335,6 +337,7 @@ export function DocPane({
   /** Single-column layout only: Ask AI, rendered above the transcript. */
   askPanel?: React.ReactNode;
 }) {
+  const router = useRouter();
   const openCount = actions.filter((a) => !a.done).length;
   const [firstSentence, ...rest] = meeting.tldr.split(".");
 
@@ -476,6 +479,12 @@ export function DocPane({
             </svg>
             Share
           </button>
+          {/* replace, not push — Back shouldn't land on the deleted meeting's 404. */}
+          <DeleteMeetingButton
+            meetingId={meeting.id}
+            meetingTitle={meeting.title}
+            onDeleted={() => router.replace("/dashboard")}
+          />
         </div>
 
         {/* Title */}

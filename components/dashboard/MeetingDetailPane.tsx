@@ -8,6 +8,7 @@ import type { Meeting, ActionItem, RawMeeting, RawActionItem } from "./data";
 import { toActionItems, toDecisions } from "./data";
 import { SpeakerStack } from "./SpeakerStack";
 import { AskAIPanel } from "./AskAIPanel";
+import { DeleteMeetingButton } from "./DeleteMeetingButton";
 import { ExportIcon, ShareIcon, CheckIcon } from "./Icons";
 import { useRouter } from "next/navigation";
 import { downloadMeetingMarkdown } from "@/lib/exportMeeting";
@@ -166,11 +167,13 @@ export function MeetingDetailPane({
   meeting,
   raw,
   onActionItemsChange,
+  onDeleted,
   onBack,
 }: {
   meeting: Meeting | undefined;
   raw: RawMeeting | undefined;
   onActionItemsChange?: (updated: RawActionItem[]) => void;
+  onDeleted?: (id: string) => void;
   /** Phone layout: shows a back-to-list button and a single-column body. */
   onBack?: () => void;
 }) {
@@ -342,6 +345,11 @@ export function MeetingDetailPane({
               <ShareIcon size={13} />
               Share
             </button>
+            <DeleteMeetingButton
+              meetingId={meeting.id}
+              meetingTitle={meeting.title}
+              onDeleted={() => onDeleted?.(meeting.id)}
+            />
           </div>
           <h2
             style={{

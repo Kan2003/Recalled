@@ -24,6 +24,7 @@ export async function POST(req: Request) {
         content: `Analyze this meeting transcript and return ONLY a JSON object with no extra text:
 
 {
+  "title": "short, specific meeting title (3-8 words, no quotes or trailing punctuation)",
   "summary": "2-3 sentence overview of the meeting",
   "decisions": ["decision 1", "decision 2"],
   "actionItems": [

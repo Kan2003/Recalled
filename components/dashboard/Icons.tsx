@@ -26,3 +26,4 @@ export const SettingsIcon= ({ size = 17, ...p }: Props) => <svg {...base(size)} 
 export const PlusIcon    = ({ size = 18, ...p }: Props) => <svg {...base(size)} strokeWidth={2.4} {...p}><path d="M12 5v14M5 12h14"/></svg>;
 export const ExportIcon  = ({ size = 13, ...p }: Props) => <svg {...base(size)} {...p}><path d="M5 12V5a2 2 0 012-2h9l5 5v9a2 2 0 01-2 2h-5"/><path d="M3 17l3 3 3-3M6 20V11"/></svg>;
 export const CheckIcon   = ({ size = 11, ...p }: Props) => <svg {...base(size)} strokeWidth={3} {...p}><path d="M5 12l5 5 9-11"/></svg>;
+export const TrashIcon   = ({ size = 13, ...p }: Props) => <svg {...base(size)} {...p}><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6M10 11v6M14 11v6"/></svg>;

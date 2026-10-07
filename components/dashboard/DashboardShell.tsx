@@ -32,6 +32,17 @@ export function DashboardShell() {
     setMobileDetailOpen(true);
   };
 
+  // Drop the deleted meeting and select the one that slides into its spot
+  // (or the new last one). Phones go back to the list.
+  const handleMeetingDeleted = (id: string) => {
+    const list = meetings ?? [];
+    const index = list.findIndex((m) => m.id === id);
+    const remaining = list.filter((m) => m.id !== id);
+    setMeetings((prev) => prev?.filter((m) => m.id !== id) ?? prev);
+    setSelectedId(remaining[Math.min(index, remaining.length - 1)]?.id);
+    setMobileDetailOpen(false);
+  };
+
   useEffect(() => {
     let cancelled = false;
     fetch("/api/meetings")
@@ -96,6 +107,7 @@ export function DashboardShell() {
               meeting={selectedRaw ? toMeetingSummary(selectedRaw) : undefined}
               raw={selectedRaw}
               onBack={isMobile ? () => setMobileDetailOpen(false) : undefined}
+              onDeleted={handleMeetingDeleted}
               onActionItemsChange={(updated) =>
                 setMeetings((prev) =>
                   prev?.map((m) => (m.id === selectedRaw?.id ? { ...m, actionItems: updated } : m)) ?? prev,

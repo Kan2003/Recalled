@@ -85,8 +85,14 @@ export function UploadShell() {
       const result = await analyzeRes.json();
       if (!analyzeRes.ok) throw new Error(result?.error || "Analysis failed");
 
+      // Keep the user's own title if they typed one; otherwise prefill with
+      // the AI's suggestion. Either way it's verified on the review step.
+      const suggestedTitle = typeof result.title === "string" ? result.title.trim() : "";
+
       setTranscript(text);
       setAnalysis({
+        title: meta.title.trim() || suggestedTitle,
+        suggestedTitle,
         summary: result.summary ?? "",
         decisions: Array.isArray(result.decisions) ? result.decisions : [],
         topics: Array.isArray(result.topics) ? result.topics : [],
@@ -106,7 +112,7 @@ export function UploadShell() {
   };
 
   const handleConfirmSave = async () => {
-    if (!analysis || !transcript || busy) return;
+    if (!analysis || !transcript || busy || !analysis.title.trim()) return;
     setBusy(true);
     setError(null);
 
@@ -115,7 +121,7 @@ export function UploadShell() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: meta.title,
+          title: analysis.title.trim(),
           transcript,
           summary: meta.summarize ? analysis.summary : null,
           decisions: meta.summarize ? analysis.decisions : [],
@@ -171,7 +177,6 @@ export function UploadShell() {
             </div>
 
             <ReviewPanel
-              title={meta.title}
               analysis={analysis}
               onChange={setAnalysis}
               includeSummary={meta.summarize}
